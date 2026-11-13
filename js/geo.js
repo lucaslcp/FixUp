@@ -1,4 +1,4 @@
-/* Servi — GPS, distâncias, rotas e endereço. */
+/* FixUp — GPS, distâncias, rotas e endereço. */
 (function (S) {
   'use strict';
 
@@ -113,4 +113,4 @@
   }
 
   S.geo = { distanceKm, offset, etaMin, locate, reverse, route, along };
-})(window.Servi = window.Servi || {});
+})(window.FixUp = window.FixUp || {});

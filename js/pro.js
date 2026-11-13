@@ -1,5 +1,5 @@
-/* Servi — modo profissional: ficar online, receber solicitações próximas,
-   atender e acompanhar ganhos (com a comissão da plataforma sempre visível). */
+/* FixUp — modo profissional: ficar online, receber solicitações próximas, atender
+   (inclusive propostas aceitas no chat) e acompanhar ganhos, com a comissão sempre visível. */
 (function (S) {
   'use strict';
 
@@ -10,13 +10,14 @@
   const pct = () => S.pricing.percent();
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
-  const CLIENTS = ['Beatriz Almeida', 'Lucas Ferreira', 'Sofia Carvalho', 'Henrique Dias', 'Marta Oliveira', 'Caio Ribeiro', 'Débora Lins'];
+  const CLIENTS = ['Beatriz Almeida', 'Lucas Ferreira', 'Sofia Carvalho', 'Henrique Dias', 'Marta Oliveira', 'Caio Ribeiro', 'Jéssica Antunes'];
   const STREETS = ['Rua das Acácias, 214', 'Av. Brasil, 1020 · apto 42', 'Rua Sete de Setembro, 88', 'Alameda das Palmeiras, 455', 'Rua Bela Vista, 37 · casa 2'];
   const REQUEST_SECONDS = 20;
   const TRAVEL_MS = 14000;
 
-  /* Estado em memória do atendimento (não é salvo: recomeça a cada sessão). */
-  const rt = { incoming: null, active: null, timer: null, expire: null, tick: null, view: null };
+  /* Estado em memória do atendimento (não é salvo: recomeça a cada sessão).
+     queue = propostas aceitas no chat enquanto outro atendimento está em andamento. */
+  const rt = { incoming: null, active: null, queue: [], timer: null, expire: null, tick: null, view: null };
 
   function todayStats() {
     const d = new Date(), start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -24,15 +25,16 @@
     return { count: jobs.length, net: jobs.reduce((s, j) => s + j.net, 0) };
   }
 
+  const newJob = (o) => Object.assign({
+    id: S.store.nextId('r'), eta: S.geo.etaMin(o.km), pos: S.geo.offset(st().location, Math.random() * 360, o.km / 1.3),
+    status: 'incoming', route: null, progress: 0
+  }, o);
+
   /* Simula um cliente próximo pedindo um serviço da especialidade do profissional. */
   function makeRequest() {
     const svc = pick(S.data.cat(pr().cat).services);
     const dist = Math.round((0.8 + Math.random() * 2.8) * 10) / 10;
-    return {
-      id: S.store.nextId('r'), client: pick(CLIENTS), address: pick(STREETS), service: svc.name, dur: svc.dur,
-      km: dist, eta: S.geo.etaMin(dist), pos: S.geo.offset(st().location, Math.random() * 360, dist / 1.3),
-      quote: S.pricing.quote(svc.price, dist), status: 'incoming', route: null, progress: 0
-    };
+    return newJob({ client: pick(CLIENTS), address: pick(STREETS), service: svc.name, km: dist, quote: S.pricing.quote(svc.price, dist) });
   }
 
   /* ---------- Blocos da tela ---------- */
@@ -40,7 +42,7 @@
   const earnHtml = (q) => `
     <div class="earn">
       <div><span>Valor do serviço</span><b>${money(q.total)}</b></div>
-      <div><span>Comissão Servi (${pct()})</span><b>− ${money(q.commission)}</b></div>
+      <div><span>Comissão FixUp (${pct()})</span><b>− ${money(q.commission)}</b></div>
       <div class="earn-total"><span>Você recebe</span><b>${money(q.payout)}</b></div>
     </div>`;
 
@@ -60,12 +62,13 @@
       const j = rt.active, s = JOB[j.status];
       return `
         <div class="job-card">
-          <div class="req-head"><span class="tag ok">Em atendimento</span><span class="req-dist" id="job-status">${esc(s.label)}</span></div>
+          <div class="req-head"><span class="tag ok">${j.fromChat ? 'Proposta aceita' : 'Em atendimento'}</span><span class="req-dist" id="job-status">${esc(s.label)}</span></div>
           <h3>${esc(j.service)}</h3>
           ${jobLine(j)}
           <ol class="steps">${STEPS.map((t, i) => `<li class="${i < s.step ? 'done' : i === s.step ? 'now' : ''}"><span class="bullet">${i < s.step ? icon('check') : ''}</span><span>${t}</span></li>`).join('')}</ol>
           <div class="earn-inline">${icon('shield-check')}<span>Você recebe <strong>${money(j.quote.payout)}</strong> · pagamento garantido pela plataforma</span></div>
           <button class="btn btn-primary btn-block btn-lg" data-action="pro-advance">${icon(s.ic)}${s.cta}</button>
+          ${rt.queue.length ? `<p class="hint">${rt.queue.length === 1 ? 'Há mais 1 atendimento na fila' : `Há mais ${rt.queue.length} atendimentos na fila`}, de propostas aceitas no chat.</p>` : ''}
         </div>`;
     }
     if (rt.incoming) {
@@ -100,11 +103,11 @@
   }
 
   function kpisHtml() {
-    const t = todayStats();
+    const t = todayStats(), s = S.db.stats('me');
     return `
       <div><small>Ganhos hoje</small><strong>${money(t.net)}</strong></div>
       <div><small>Serviços hoje</small><strong>${t.count}</strong></div>
-      <div><small>Avaliação</small><strong>${ui.rating(pr().rating)}</strong></div>`;
+      <div><small>Avaliação</small><strong>${ui.rating(s.rating || S.data.me.rating)}</strong></div>`;
   }
 
   const chipText = () => (rt.active ? 'Rota até o cliente' : rt.incoming ? 'Cliente a ' + km(rt.incoming.km) : pr().online ? 'Área de atendimento' : 'Você está offline');
@@ -114,7 +117,7 @@
   function paintMap() {
     const v = rt.view;
     if (!v || !v.map) return;
-    const loc = st().location, job = rt.active || rt.incoming;
+    const loc = st().location, job = rt.active || rt.incoming, colors = S.map.routeColors();
     v.layer.clearLayers();
     v.lineLeft = null;
     v.circle.setStyle({ opacity: pr().online && !job ? 1 : 0, fillOpacity: pr().online && !job ? 0.07 : 0 });
@@ -125,8 +128,8 @@
     }
     S.map.dest(v.layer, job.pos);
     if (job.route) {
-      S.map.line(v.layer, job.route.points, '#A9C5FF', 5);
-      v.lineLeft = S.map.line(v.layer, job.route.points, '#1557E6', 5);
+      S.map.line(v.layer, job.route.points, colors[1], 5);
+      v.lineLeft = S.map.line(v.layer, job.route.points, colors[0], 5);
     }
     v.self.setLatLng(S.map.ll(job.at || loc));
     S.map.fit(v.map, [loc, job.pos], { t: 44, b: 30, l: 40, r: 40 });
@@ -199,12 +202,18 @@
     paint();
   }
 
+  /* Conclusão: o valor entra no saldo e o trabalho entra no banco de trabalhos realizados. */
   function completeJob() {
-    const job = rt.active, p = pr(), q = job.quote;
-    p.jobs.unshift({ id: S.store.nextId('j'), client: job.client, service: job.service, gross: q.total, commission: q.commission, net: q.payout, at: Date.now() });
+    const job = rt.active, p = pr(), q = job.quote, now = Date.now(), who = job.client.split(' ');
+    p.jobs.unshift({ id: S.store.nextId('j'), client: job.client, service: job.service, gross: q.total, commission: q.commission, net: q.payout, at: now });
     p.balance = S.pricing.round2(p.balance + q.payout);
     S.store.save();
-    rt.active = null;
+    S.db.add({
+      id: 'me-' + job.id, proId: 'me', cat: p.cat, kind: 'Atendimentos recentes', title: job.service, device: '', brand: '', model: '', problem: '',
+      price: q.total, min: null, doneAt: now, rating: 5, review: '', client: who[0] + ' ' + who[who.length - 1][0] + '.', source: 'app'
+    });
+    rt.active = rt.queue.shift() || null;
+    if (rt.active) rt.active.status = 'accepted';
     paint();
     ui.sheet.open(`
       <div class="dialog">
@@ -212,10 +221,10 @@
         <h3>Serviço concluído</h3>
         <p class="muted">${esc(job.service)} · ${esc(job.client)}</p>
         ${earnHtml(q)}
-        <p class="hint">O valor já está no seu saldo e pode ser sacado via Pix a qualquer momento.</p>
+        <p class="hint">O valor já está no seu saldo e o serviço entrou no seu histórico de trabalhos.</p>
         <button class="btn btn-primary btn-block" data-action="sheet-close">Continuar</button>
       </div>`);
-    schedule(7000);
+    if (!rt.active) schedule(7000);
   }
 
   A['pro-toggle'] = () => {
@@ -225,7 +234,8 @@
     S.store.save();
     clearTimers();
     rt.incoming = null;
-    if (p.online) schedule(3500);
+    if (p.online && !rt.active) schedule(3500);
+    if (p.online) S.chat.lead();
     paint();
     ui.toast(p.online ? 'Você está online. Buscando solicitações…' : 'Você está offline.', p.online ? 'ok' : 'info');
   };
@@ -256,12 +266,38 @@
     completeJob();
   };
 
+  A['open-my-jobs'] = () => {
+    const jobs = S.db.byPro('me'), s = S.db.stats('me');
+    ui.sheet.open(`
+      <div class="sheet-head"><h3>Meus trabalhos realizados</h3><button class="icon-btn soft" data-action="sheet-close" aria-label="Fechar">${icon('x')}</button></div>
+      <div class="db-stats">
+        <div><strong>${s.count}</strong><small>trabalhos no histórico</small></div>
+        <div><strong>${ui.rating(s.rating)}</strong><small>avaliação média</small></div>
+      </div>
+      <p class="muted">É este histórico que os clientes veem no seu perfil. A busca da FixUp também usa esses registros para indicar você a quem tem um problema parecido.</p>
+      <div class="kinds">${S.db.kinds('me').map((k) => `<span>${esc(k.label)}<b>${k.count}</b></span>`).join('')}</div>
+      <div class="jobs">${jobs.slice(0, 40).map((j) => ui.jobCard(j)).join('')}</div>`);
+  };
+
   S.proSim = {
+    /** Uma proposta enviada pelo chat foi aceita e paga: vira um atendimento (ou entra na fila). */
+    fromProposal(o) {
+      const job = newJob({ client: o.client, address: o.address, service: o.service, km: o.km, quote: S.pricing.quoteFixed(o.price), fromChat: true });
+      if (rt.active) { rt.queue.push(job); paint(); return; }
+      clearTimeout(rt.timer);
+      clearTimeout(rt.expire);
+      rt.incoming = null;
+      rt.active = job;
+      job.status = 'accepted';
+      paint();
+    },
+
     /** Encerra a sessão do profissional (troca de modo ou restauração da demonstração). */
     reset() {
       clearTimers();
       rt.incoming = null;
       rt.active = null;
+      rt.queue = [];
       pr().online = false;
     }
   };
@@ -279,7 +315,7 @@
         <header class="hero hero-pro">
           <div class="hero-top">
             <div class="pro-id">
-              ${avatar({ name: p.name, hue: 228 }, 44)}
+              ${avatar({ name: p.name, hue: 252 }, 44)}
               <span><strong>${esc(p.name)}</strong><small>${esc(S.data.cat(p.cat).name)} · modo profissional</small></span>
             </div>
             <button class="switch${p.online ? ' on' : ''}" id="pro-switch" data-action="pro-toggle" role="switch" aria-checked="${p.online}">
@@ -305,11 +341,11 @@
     },
 
     mount(root) {
-      const loc = st().location;
+      const loc = st().location, color = S.map.routeColors()[0];
       const map = S.map.create(root.querySelector('#pro-map'), loc, 12, { interactive: false });
       rt.view = { root, map, layer: null, self: null, circle: null, lineLeft: null };
       if (map) {
-        rt.view.circle = window.L.circle(S.map.ll(loc), { radius: S.config.coverageKm * 1000, color: '#1557E6', weight: 1.5, fillColor: '#1557E6', fillOpacity: 0.07, interactive: false }).addTo(map);
+        rt.view.circle = window.L.circle(S.map.ll(loc), { radius: S.config.coverageKm * 1000, color, weight: 1.5, fillColor: color, fillOpacity: 0.07, interactive: false }).addTo(map);
         rt.view.layer = window.L.layerGroup().addTo(map);
         rt.view.self = S.map.user(map, loc);
         paintMap();
@@ -374,14 +410,14 @@
             <div class="bars">${week.map((x) => `<div class="bar${x.today ? ' today' : ''}"><span style="height:${Math.round(4 + (x.net / max) * 72)}px"></span><small>${esc(x.label)}</small></div>`).join('')}</div>
             <dl class="bill">
               <div><dt>Valor dos serviços</dt><dd>${money(sum.gross)}</dd></div>
-              <div><dt>Comissão Servi (${pct()})</dt><dd>− ${money(sum.commission)}</dd></div>
+              <div><dt>Comissão FixUp (${pct()})</dt><dd>− ${money(sum.commission)}</dd></div>
               <div class="bill-total"><dt>Você recebeu</dt><dd>${money(sum.net)}</dd></div>
             </dl>
           </div>
         </section>
 
         <section class="section">
-          <div class="fee-note">${icon('percent')}<span>Sem mensalidade e sem taxa de saque. A Servi cobra apenas <strong>${pct()}</strong> por serviço concluído.</span></div>
+          <div class="fee-note">${icon('percent')}<span>Sem mensalidade e sem taxa de saque. A FixUp cobra apenas <strong>${pct()}</strong> por serviço concluído.</span></div>
         </section>
 
         <section class="section">
@@ -403,4 +439,4 @@
     S.app.refresh();
     ui.toast('Saque solicitado. O Pix cai em instantes.', 'ok');
   };
-})(window.Servi = window.Servi || {});
+})(window.FixUp = window.FixUp || {});

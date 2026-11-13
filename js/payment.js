@@ -1,6 +1,7 @@
-/* Servi — pagamento integrado (SIMULADO).
+/* FixUp — pagamento integrado (SIMULADO).
    Fluxo: o cliente paga pelo app -> o valor fica retido pela plataforma -> ao concluir,
    o valor é dividido entre o profissional (repasse) e a plataforma (comissão).
+   Vale tanto para serviços de catálogo quanto para propostas combinadas no chat.
 
    Em produção, cada função abaixo vira uma chamada ao backend, que conversa com um
    gateway com suporte a split de pagamento (ex.: Mercado Pago, Pagar.me, Stripe Connect). */
@@ -13,7 +14,7 @@
   const METHODS = [
     { id: 'pix', name: 'Pix', icon: 'qr-code', desc: () => 'Aprovação imediata' },
     { id: 'card', name: 'Cartão de crédito', icon: 'credit-card', desc: () => 'Visa final 4242' },
-    { id: 'wallet', name: 'Saldo Servi', icon: 'wallet', desc: () => 'Disponível: ' + money(wallet().balance) }
+    { id: 'wallet', name: 'Saldo FixUp', icon: 'wallet', desc: () => 'Disponível: ' + money(wallet().balance) }
   ];
 
   const findTx = (order) => wallet().tx.find((t) => t.orderId === order.id && t.kind === 'service');
@@ -57,4 +58,4 @@
       S.store.save();
     }
   };
-})(window.Servi = window.Servi || {});
+})(window.FixUp = window.FixUp || {});

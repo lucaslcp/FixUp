@@ -1,4 +1,4 @@
-# Servi - servidor local simples (somente arquivos estaticos, somente localhost).
+# FixUp - servidor local simples (somente arquivos estaticos, somente localhost).
 # Uso: powershell -ExecutionPolicy Bypass -File servidor.ps1 [-Port 5173]
 param([int]$Port = 5173)
 
@@ -17,7 +17,7 @@ $mime = @{
 $listener = New-Object System.Net.HttpListener
 $listener.Prefixes.Add("http://localhost:$Port/")
 $listener.Start()
-Write-Host "Servi rodando em http://localhost:$Port/  (Ctrl+C para parar)"
+Write-Host "FixUp rodando em http://localhost:$Port/  (Ctrl+C para parar)"
 
 try {
   while ($listener.IsListening) {

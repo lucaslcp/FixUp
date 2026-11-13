@@ -1,4 +1,5 @@
-/* Servi — pedidos e simulação do atendimento.
+/* FixUp — pedidos e simulação do atendimento.
+   Um pedido nasce de um serviço de catálogo ou de uma proposta aceita no chat.
    A simulação faz o papel do profissional real: aceita, se desloca pela rota e conclui.
    Em produção, estas mudanças de status e de posição chegariam do app do profissional
    em tempo real (WebSocket / push), com o GPS dele enviando a posição. */
@@ -19,7 +20,8 @@
   const listeners = new Set();
   const live = {};   // dados em tempo real por pedido: rota, posição, tempo restante
 
-  const emit = (order, tick) => listeners.forEach((fn) => fn(order, live[order.id], !!tick));
+  /* Percorre uma cópia: uma tela pode se redesenhar (e trocar o próprio ouvinte) durante o aviso. */
+  const emit = (order, tick) => Array.from(listeners).forEach((fn) => fn(order, live[order.id], !!tick));
 
   function setStatus(order, status) {
     order.status = status;
@@ -81,18 +83,22 @@
     canCancel: (o) => CANCELLABLE.includes(o.status),
     label: (status) => LABELS[status] || status,
 
+    /** Cria o pedido e retém o pagamento.
+        draft = { proId, serviceId, note, method } para um serviço de catálogo,
+             ou { proId, proposal, method } para uma proposta combinada no chat. */
     create(draft) {
-      const st = S.store.state, pro = S.data.pro(draft.proId);
-      const svc = pro.services.find((s) => s.id === draft.serviceId);
+      const st = S.store.state, pro = S.data.pro(draft.proId), custom = draft.proposal || null;
+      const svc = custom ? null : pro.services.find((s) => s.id === draft.serviceId);
       const loc = st.location, now = Date.now();
       const order = {
-        id: S.store.nextId('o'), code: 'SV-' + (1000 + Math.floor(Math.random() * 9000)),
-        proId: pro.id, catId: pro.cat, serviceId: svc.id, serviceName: svc.name, note: (draft.note || '').trim(),
+        id: S.store.nextId('o'), code: 'FX-' + (1000 + Math.floor(Math.random() * 9000)),
+        proId: pro.id, catId: pro.cat, serviceId: svc ? svc.id : null, custom: !!custom,
+        serviceName: custom ? custom.title : svc.name, note: custom ? custom.desc : (draft.note || '').trim(),
         address: { lat: loc.lat, lng: loc.lng, label: loc.label, sub: loc.sub },
         proStart: { lat: pro.pos.lat, lng: pro.pos.lng }, km: pro.km, etaMin: pro.eta,
-        quote: S.pricing.quote(svc.price, pro.km), method: draft.method,
+        quote: custom ? S.pricing.quoteFixed(custom.price) : S.pricing.quote(svc.price, pro.km), method: draft.method,
         status: 'searching', progress: 0, createdAt: now, timeline: [{ status: 'searching', at: now }],
-        payStatus: 'held', rating: null, chat: []
+        payStatus: 'held', rating: null
       };
       st.orders.unshift(order);
       S.pay.hold(order);
@@ -101,22 +107,34 @@
       return order;
     },
 
-    /** O cliente confirma a conclusão: o pagamento retido é liberado. */
+    /** O cliente confirma a conclusão: o pagamento retido é liberado e o trabalho entra no banco. */
     confirm(order) {
       stop(order);
       S.pay.release(order);
+      const user = S.store.state.user.name.split(' ');
+      order.jobId = 'app-' + order.id;
+      S.db.add({
+        id: order.jobId, proId: order.proId, cat: order.catId, kind: S.data.cat(order.catId).short.replace('­', ''),
+        title: order.serviceName, device: '', brand: '', model: '', problem: order.note || '',
+        price: order.quote.service, min: null, doneAt: Date.now(), rating: null, review: '',
+        client: user[0] + ' ' + user[user.length - 1][0] + '.', source: 'app', orderId: order.id
+      });
       setStatus(order, 'completed');
+      if (S.chat) S.chat.note(order.proId, 'Serviço concluído. Pagamento liberado ao profissional.');
     },
 
     cancel(order) {
       stop(order);
       S.pay.refund(order);
       setStatus(order, 'cancelled');
+      if (S.chat) S.chat.note(order.proId, 'Pedido cancelado. O valor foi estornado.');
     },
 
+    /** A avaliação do cliente também vai para o registro do trabalho no banco. */
     rate(order, rating) {
       order.rating = rating;
       S.store.save();
+      if (order.jobId) S.db.update(order.jobId, { rating: rating.stars, review: rating.comment || '' });
     }
   };
-})(window.Servi = window.Servi || {});
+})(window.FixUp = window.FixUp || {});

@@ -1,4 +1,4 @@
-/* Servi — utilitários de interface: formatação, ícones, painéis, avisos e mapa. */
+/* FixUp — utilitários de interface: formatação, ícones, tema, painéis, avisos e mapa. */
 (function (S) {
   'use strict';
 
@@ -15,9 +15,10 @@
   const rating = (r) => r.toFixed(1).replace('.', ',');
   const first = (name) => name.split(' ')[0];
   const initials = (name) => name.split(' ').filter(Boolean).filter((_, i, a) => i === 0 || i === a.length - 1).map((w) => w[0]).join('').toUpperCase();
-  const avatar = (p, size) => `<span class="avatar" style="--s:${size || 48}px;--h:${p.hue == null ? 220 : p.hue}">${esc(initials(p.name))}</span>`;
+  const avatar = (p, size) => `<span class="avatar" style="--s:${size || 48}px;--h:${p.hue == null ? 240 : p.hue}">${esc(initials(p.name))}</span>`;
   const stars = (n) => { let h = ''; for (let i = 1; i <= 5; i++) h += icon('star', i <= n ? 'on' : 'off'); return h; };
   const time = (ts) => new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
   function day(ts) {
     const d = new Date(ts), n = new Date();
@@ -29,6 +30,18 @@
     return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
   }
 
+  /** Tempo decorrido em palavras: "hoje", "há 3 dias", "há 2 meses". */
+  function ago(ts) {
+    const d = Math.max(0, Math.floor((Date.now() - ts) / 864e5));
+    const n = (v, one, many) => (v === 1 ? `há 1 ${one}` : `há ${v} ${many}`);
+    if (d === 0) return 'hoje';
+    if (d === 1) return 'ontem';
+    if (d < 7) return `há ${d} dias`;
+    if (d < 30) return n(Math.floor(d / 7), 'semana', 'semanas');
+    if (d < 365) return n(Math.floor(d / 30), 'mês', 'meses');
+    return n(Math.floor(d / 365), 'ano', 'anos');
+  }
+
   /** Código QR ilustrativo (não é um QR válido): usado na tela de Pix simulada. */
   function fakeQr(seed) {
     const n = 25;
@@ -38,14 +51,84 @@
     let cells = '';
     for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (!inFinder(x, y) && rnd() > 0.52) cells += `<rect x="${x}" y="${y}" width="1" height="1"/>`;
     const f = (x, y) => `<rect x="${x}" y="${y}" width="7" height="7" rx="1.4"/><rect x="${x + 1}" y="${y + 1}" width="5" height="5" rx=".8" fill="#fff"/><rect x="${x + 2}" y="${y + 2}" width="3" height="3" rx=".5"/>`;
-    return `<svg viewBox="-1 -1 27 27" fill="#0A1F44" shape-rendering="crispEdges" aria-hidden="true">${cells}${f(0, 0)}${f(n - 7, 0)}${f(0, n - 7)}</svg>`;
+    return `<svg viewBox="-1 -1 27 27" fill="#08083A" shape-rendering="crispEdges" aria-hidden="true">${cells}${f(0, 0)}${f(n - 7, 0)}${f(0, n - 7)}</svg>`;
   }
 
-  const ui = S.ui = { esc, money, moneyShort, icon, km, rating, first, avatar, stars, time, day, fakeQr };
+  const ui = S.ui = { esc, money, moneyShort, icon, km, rating, first, avatar, stars, time, day, ago, fakeQr, cssVar };
 
   ui.refreshIcons = function () {
     if (window.lucide) window.lucide.createIcons();
   };
+
+  /* ---------- Trabalhos realizados ---------- */
+  const jobExtra = (j) => [j.device, j.brand, j.model].filter(Boolean).join(' ');
+
+  /** Título completo de um trabalho: "Troca da placa fonte — geladeira Electrolux DF52". */
+  ui.jobTitle = (j) => { const x = jobExtra(j); return j.title + (x ? ' — ' + x : ''); };
+
+  const LEVEL = { same: ['same', 'Mesmo problema'], similar: ['similar', 'Trabalho parecido'] };
+
+  /** Cartão de um trabalho do banco. `level` (opcional) destaca o quanto ele se parece com a busca. */
+  ui.jobCard = function (j, level) {
+    const x = jobExtra(j), lv = LEVEL[level];
+    return `
+      <article class="job${lv ? ' hit' : ''}">
+        <div class="job-top"><strong>${esc(j.title)}</strong><b>${moneyShort(j.price)}</b></div>
+        ${x ? `<p class="job-dev">${esc(x.charAt(0).toUpperCase() + x.slice(1))}</p>` : ''}
+        ${j.problem ? `<p class="job-problem">“${esc(j.problem)}”</p>` : ''}
+        <div class="job-meta">
+          ${lv ? `<span class="lvl ${lv[0]}">${lv[1]}</span>` : ''}
+          ${j.rating ? `<span class="star">${icon('star')}${j.rating},0</span>` : '<span>Aguardando avaliação</span>'}
+          <span>${ago(j.doneAt)}</span>${j.client ? `<span>${esc(j.client)}</span>` : ''}
+        </div>
+      </article>`;
+  };
+
+  /* ---------- Tema (claro, escuro ou automático) ---------- */
+  const THEME_KEY = 'fixup:theme';
+  let themeMem = null;
+
+  S.theme = {
+    /** Preferência do usuário: 'auto', 'light' ou 'dark'. */
+    pref() {
+      if (themeMem) return themeMem;
+      try { return localStorage.getItem(THEME_KEY) || 'auto'; } catch (e) { return 'auto'; }
+    },
+
+    /** Tema em uso. No automático, segue a página que hospeda o app (se houver) ou o aparelho. */
+    resolved() {
+      const p = this.pref();
+      if (p === 'light' || p === 'dark') return p;
+      const host = document.documentElement.getAttribute('data-theme');
+      if (host === 'light' || host === 'dark') return host;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    },
+
+    apply() {
+      const t = this.resolved();
+      document.documentElement.setAttribute('data-fx-theme', t);
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', t === 'dark' ? '#0A0A1F' : '#0404E2');
+      document.querySelectorAll('.theme-seg button').forEach((b) => b.classList.toggle('active', b.dataset.arg === this.pref()));
+      return t;
+    },
+
+    set(p) {
+      themeMem = p;
+      try { localStorage.setItem(THEME_KEY, p); } catch (e) { /* fica só nesta sessão */ }
+      this.apply();
+      if (S.app) S.app.refresh();
+    },
+
+    /** Reaplica o tema quando o aparelho (ou a página que hospeda o app) muda de claro para escuro. */
+    watch() {
+      const sync = () => { if (this.pref() === 'auto' && this.apply() && S.app) S.app.refresh(); };
+      try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', sync); } catch (e) { /* navegador antigo */ }
+      try { new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); } catch (e) { /* idem */ }
+    }
+  };
+
+  S.actions['set-theme'] = (el) => S.theme.set(el.dataset.arg);
 
   /* ---------- Avisos rápidos ---------- */
   ui.toast = function (msg, kind) {
@@ -111,10 +194,16 @@
   const pin = (html) => window.L.divIcon({ className: 'pin-wrap', html, iconSize: [0, 0] });
   const ll = (p) => [p.lat, p.lng];
 
+  /* Cores do mapa ilustrativo em cada tema. */
+  const DEMO_MAP = {
+    light: { bg: '#E6E7F8', park: '#CFE8DF', block: '#D9DAF4', street: '#FFFFFF' },
+    dark: { bg: '#14142B', park: '#12332E', block: '#1B1B3D', street: '#2C2C57' }
+  };
+
   /** Mapa ilustrativo desenhado no próprio navegador (sem buscar imagens em outros sites):
       uma malha de ruas, avenidas e praças. Usado quando `config.tiles` está vazio. */
   function demoLayer() {
-    const L = window.L, g = S.config.demoGrid;
+    const L = window.L, g = S.config.demoGrid, colors = DEMO_MAP[S.theme.resolved()];
     const mod4 = (n) => ((n % 4) + 4) % 4;
     const rnd = (i, j) => {
       let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263)) | 0;
@@ -139,7 +228,7 @@
         const j0 = Math.floor(se.lat / g.dLat) - 1, j1 = Math.ceil(nw.lat / g.dLat) + 1;
         const block = X(g.dLng) - X(0);
 
-        ctx.fillStyle = '#E4ECF8';
+        ctx.fillStyle = colors.bg;
         ctx.fillRect(0, 0, size.x, size.y);
 
         if (block >= 5) {
@@ -148,7 +237,7 @@
               const r = rnd(i, j);
               const park = r <= 0.08;
               if (!park && (r < 0.9 || block < 14)) continue;
-              ctx.fillStyle = park ? '#CFE8DF' : '#D9E4F4';
+              ctx.fillStyle = park ? colors.park : colors.block;
               const x = X(i * g.dLng), y = Y((j + 1) * g.dLat);
               ctx.fillRect(x, y, X((i + 1) * g.dLng) - x, Y(j * g.dLat) - y);
             }
@@ -156,7 +245,7 @@
         }
 
         const minor = Math.min(9, Math.max(1, block * 0.16)), major = Math.min(16, Math.max(2, block * 0.32));
-        ctx.strokeStyle = '#FFFFFF';
+        ctx.strokeStyle = colors.street;
         const line = (x0, y0, x1, y1, w) => { ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke(); };
         for (let i = i0; i <= i1; i++) {
           const big = mod4(i) === 0;
@@ -174,6 +263,9 @@
 
   S.map = {
     ll,
+
+    /** Cores da rota no tema atual: [trecho que falta, trecho já percorrido]. */
+    routeColors: () => [cssVar('--route') || '#0404E2', cssVar('--route-bg') || '#B9B9FF'],
 
     /** Cria o mapa. Retorna `null` (e mostra um aviso) se a biblioteca não carregou. */
     create(el, center, zoom, opts) {
@@ -198,7 +290,7 @@
     user: (map, pos) => window.L.marker(ll(pos), { icon: pin('<div class="pin pin-user"></div>'), interactive: false, zIndexOffset: 400 }).addTo(map),
     dest: (map, pos) => window.L.marker(ll(pos), { icon: pin('<div class="pin pin-dest"></div>'), interactive: false, zIndexOffset: 300 }).addTo(map),
     dot: (map, p) => window.L.marker(ll(p.pos), { icon: pin(`<div class="pin pin-dot${p.availableNow ? '' : ' off'}"></div>`), interactive: false }).addTo(map),
-    price: (layer, p) => window.L.marker(ll(p.pos), { icon: pin(`<div class="pin pin-price">${moneyShort(p.match ? p.match.price : p.fromPrice)}</div>`) }).addTo(layer),
+    price: (layer, p, value) => window.L.marker(ll(p.pos), { icon: pin(`<div class="pin pin-price">${moneyShort(value == null ? p.fromPrice : value)}</div>`) }).addTo(layer),
     pro: (map, p, pos) => window.L.marker(ll(pos), { icon: pin(`<div class="pin pin-pro">${avatar(p, 40)}</div>`), interactive: false, zIndexOffset: 600 }).addTo(map),
 
     line(map, points, color, weight) {
@@ -210,4 +302,4 @@
       map.fitBounds(window.L.latLngBounds(points.map(ll)), { paddingTopLeft: [p.l, p.t], paddingBottomRight: [p.r, p.b], maxZoom: 16, animate: false });
     }
   };
-})(window.Servi = window.Servi || {});
+})(window.FixUp = window.FixUp || {});
