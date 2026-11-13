@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1557E6">
+  <title>Servi — profissionais perto de você</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231557E6'/%3E%3Cpath d='M16 6.5c-4.1 0-7.4 3.2-7.4 7.2 0 5.2 6 10.6 7 11.5.2.2.6.2.8 0 1-.9 7-6.3 7-11.5 0-4-3.3-7.2-7.4-7.2z' fill='%23fff'/%3E%3Cpath d='M12.8 13.9l2.3 2.3 4.2-4.4' stroke='%231557E6' stroke-width='2.1' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="stage">
+
+    <!-- Painel de apresentação (apenas em telas largas) -->
+    <aside class="showcase">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" width="40" height="40" aria-hidden="true">
+          <rect width="32" height="32" rx="9" fill="#1557E6"/>
+          <path d="M16 6.5c-4.1 0-7.4 3.2-7.4 7.2 0 5.2 6 10.6 7 11.5.2.2.6.2.8 0 1-.9 7-6.3 7-11.5 0-4-3.3-7.2-7.4-7.2z" fill="#fff"/>
+          <path d="M12.8 13.9l2.3 2.3 4.2-4.4" stroke="#1557E6" stroke-width="2.1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Servi</span>
+      </div>
+      <h1>O profissional certo,<br>na sua porta em minutos.</h1>
+      <p class="lead">Busque o serviço, veja quem está por perto e acompanhe tudo pelo app — do chamado ao pagamento.</p>
+
+      <ul class="feats">
+        <li>
+          <span class="feat-ic"><i data-lucide="map-pin"></i></span>
+          <div><strong>GPS em tempo real</strong><span>Profissionais próximos no mapa e chegada acompanhada ao vivo.</span></div>
+        </li>
+        <li>
+          <span class="feat-ic"><i data-lucide="shield-check"></i></span>
+          <div><strong>Pagamento integrado e protegido</strong><span>Pix, cartão ou saldo. O valor só é liberado quando o serviço é concluído.</span></div>
+        </li>
+        <li>
+          <span class="feat-ic"><i data-lucide="percent"></i></span>
+          <div><strong>Sem mensalidade</strong><span>Apenas <b data-bind="commission">8%</b> de comissão por serviço concluído.</span></div>
+        </li>
+      </ul>
+
+      <div class="viewas">
+        <span>Ver o app como</span>
+        <div class="seg" id="mode-seg">
+          <button data-action="set-mode" data-arg="client">Cliente</button>
+          <button data-action="set-mode" data-arg="pro">Profissional</button>
+        </div>
+      </div>
+      <p class="fine">Protótipo de demonstração: pagamentos e deslocamentos são simulados.</p>
+    </aside>
+
+    <!-- Aplicativo -->
+    <div class="device" id="device" data-sb="dark">
+      <div class="statusbar" aria-hidden="true">
+        <span id="sb-time">9:41</span>
+        <span class="island"></span>
+        <span class="sb-icons">
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="4.6" y="5.5" width="3" height="6.5" rx="1"/><rect x="9.2" y="3" width="3" height="9" rx="1"/><rect x="13.8" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1.5 4.2a9.5 9.5 0 0 1 13 0"/><path d="M4 6.9a6 6 0 0 1 8 0"/><circle cx="8" cy="10" r="1.1" fill="currentColor" stroke="none"/></svg>
+          <svg width="26" height="12" viewBox="0 0 26 12" fill="none"><rect x=".7" y=".7" width="21.6" height="10.6" rx="3.2" stroke="currentColor" stroke-opacity=".5" stroke-width="1.2"/><rect x="2.3" y="2.3" width="18.4" height="7.4" rx="1.8" fill="currentColor"/><rect x="23.6" y="4" width="1.8" height="4" rx=".9" fill="currentColor" fill-opacity=".5"/></svg>
+        </span>
+      </div>
+
+      <main id="screen" class="screen"></main>
+      <nav id="tabbar" class="tabbar" hidden></nav>
+      <div id="sheet-root" class="sheet-root"></div>
+      <div id="toast-root" class="toast-root" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <!-- Bibliotecas: mapa (Leaflet) e ícones (Lucide) -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+
+  <!-- Aplicação -->
+  <script src="js/config.js"></script>
+  <script src="js/geo.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/payment.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/orders.js"></script>
+  <script src="js/client.js"></script>
+  <script src="js/pro.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

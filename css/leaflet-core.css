@@ -1,0 +1,79 @@
+/* Regras essenciais do Leaflet 1.9 (posicionamento de camadas, marcadores e controles).
+   Usado pela versão publicada, que não pode carregar a folha de estilos do Leaflet de outro site.
+   A versão local (index.html) usa o leaflet.css completo do CDN. */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer { position: absolute; left: 0; top: 0; }
+
+.leaflet-container { overflow: hidden; -webkit-tap-highlight-color: transparent; background: #E6EDF7; outline-offset: 1px; }
+
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+.leaflet-marker-icon,
+.leaflet-marker-shadow { display: block; }
+
+.leaflet-container .leaflet-overlay-pane svg { max-width: none !important; max-height: none !important; }
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile { max-width: none !important; max-height: none !important; padding: 0; }
+
+.leaflet-container.leaflet-touch-zoom { touch-action: pan-x pan-y; }
+.leaflet-container.leaflet-touch-drag { touch-action: pinch-zoom; }
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom { touch-action: none; }
+
+.leaflet-tile { visibility: hidden; }
+.leaflet-tile-loaded { visibility: inherit; }
+.leaflet-zoom-box { width: 0; height: 0; box-sizing: border-box; z-index: 800; }
+
+.leaflet-pane { z-index: 400; }
+.leaflet-tile-pane { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane { z-index: 500; }
+.leaflet-marker-pane { z-index: 600; }
+.leaflet-tooltip-pane { z-index: 650; }
+.leaflet-popup-pane { z-index: 700; }
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg { z-index: 200; }
+
+.leaflet-control { position: relative; z-index: 800; pointer-events: auto; float: left; clear: both; }
+.leaflet-top,
+.leaflet-bottom { position: absolute; z-index: 1000; pointer-events: none; }
+.leaflet-top { top: 0; }
+.leaflet-right { right: 0; }
+.leaflet-bottom { bottom: 0; }
+.leaflet-left { left: 0; }
+.leaflet-right .leaflet-control { float: right; }
+.leaflet-control-attribution { margin: 0; white-space: nowrap; }
+
+.leaflet-zoom-animated { transform-origin: 0 0; }
+svg.leaflet-zoom-animated { will-change: transform; }
+.leaflet-zoom-anim .leaflet-zoom-animated { transition: transform .25s cubic-bezier(0, 0, .25, 1); }
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile { transition: none; }
+.leaflet-zoom-anim .leaflet-zoom-hide { visibility: hidden; }
+
+.leaflet-interactive { cursor: pointer; }
+.leaflet-grab { cursor: grab; }
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable { cursor: grabbing; }
+
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container { pointer-events: none; }
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive { pointer-events: auto; }
