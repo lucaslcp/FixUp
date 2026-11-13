@@ -5,7 +5,8 @@ palavras, vê os profissionais independentes que já resolveram casos parecidos,
 pelo chat, paga pelo app e acompanha a chegada no mapa.
 Não há mensalidade: a plataforma retém uma comissão pequena de cada serviço concluído.
 
-- Site: https://flourishing-druid-dd582d.netlify.app
+- Site: https://lucaslcp.github.io/FixUp/ (sempre na versão mais recente)
+- Código: https://github.com/lucaslcp/FixUp
 - Notas de atualização: [CHANGELOG.md](CHANGELOG.md) (também em Perfil > Novidades, dentro do app)
 
 ## Como abrir
@@ -121,12 +122,14 @@ Tudo isso é ligado por `FIXUP_EMBED = true` (veja `js/config.js`). O resto do c
 
 ## Site público
 
-A versão completa (mapa real, rota pelas ruas e GPS) está hospedada no Netlify:
-https://flourishing-druid-dd582d.netlify.app
+A versão completa (mapa real, rota pelas ruas e GPS) está no GitHub Pages:
+https://lucaslcp.github.io/FixUp/
 
-Para atualizar, arraste a pasta de novo na área de deploys do projeto, no painel do Netlify.
-Qualquer hospedagem de sites estáticos com HTTPS serve (o GPS do navegador exige HTTPS); a página
-é a `index.html`.
+O site é publicado a partir da branch `main`. Cada envio ao GitHub atualiza o site sozinho, em
+um ou dois minutos. Qualquer hospedagem de sites estáticos com HTTPS também serve (o GPS do
+navegador exige HTTPS); a página é a `index.html`.
+
+O endereço antigo no Netlify (flourishing-druid-dd582d.netlify.app) ficou na versão 1.0.0.
 
 ## Estrutura
 
