@@ -10,7 +10,7 @@
 
   S.config = {
     appName: 'FixUp',
-    version: '2.1.0',
+    version: '2.2.0',
     embedded,
 
     /** Comissão da plataforma sobre cada serviço concluído (0.08 = 8%). Não há mensalidade. */
@@ -54,6 +54,14 @@
 
     /** Notas de atualização mostradas em Perfil > Novidades (o histórico completo fica no CHANGELOG.md). */
     releases: [
+      {
+        v: '2.2.0', date: '14 nov 2026', title: 'Novo logo no ícone e na marca',
+        notes: [
+          'O ícone da aba do navegador e a marca ao lado do aparelho agora usam o novo logo.',
+          'Ícone para a tela inicial do iPhone, quando o site é adicionado à tela de início.',
+          'Prévia com o logo ao compartilhar o link do site no WhatsApp e nas redes sociais.'
+        ]
+      },
       {
         v: '2.1.0', date: '14 nov 2026', title: 'Abertura animada com o novo logo',
         notes: [

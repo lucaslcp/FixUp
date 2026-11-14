@@ -4,6 +4,20 @@ Todas as mudanças do FixUp, da mais recente para a mais antiga.
 As versões seguem o formato `MAIOR.MENOR.CORREÇÃO`: o primeiro número muda quando o app muda de forma
 grande, o segundo quando ganha recursos novos e o terceiro quando só há correções.
 
+## 2.2.0 — 14 de novembro de 2026
+
+### Mudou
+
+- O ícone da aba do navegador e a marca ao lado do aparelho agora usam o novo logo.
+
+### Novo
+
+- **Ícone para a tela inicial do iPhone** (`img/icone-180.png`), usado quando o site é adicionado à
+  tela de início.
+- **Prévia do link com o logo** ao compartilhar o site no WhatsApp e nas redes sociais
+  (`img/icone-512.png`, com título e descrição).
+- A ferramenta do logo (`ferramentas/logo`) também gera os ícones PNG.
+
 ## 2.1.0 — 14 de novembro de 2026
 
 ### Novo

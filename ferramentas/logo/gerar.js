@@ -1,10 +1,13 @@
 /* FixUp — gera o logo vetorial e a abertura animada a partir do PNG do logo.
 
-   Uso (uma vez): npm install        (nesta pasta; instala o potrace, que vetoriza imagens)
+   Uso (uma vez): npm install        (nesta pasta; instala o potrace, que vetoriza imagens,
+                                      e o resvg, que transforma SVG em PNG)
    Depois:        npm run gerar      (ou: node gerar.js [logo.png])
 
-   Saída: ../../img/logo-fixup.svg  (logo estático)
+   Saída: ../../img/logo-fixup.svg  (logo estático: ícone da aba e marca ao lado do aparelho)
           ../../img/abertura.svg    (abertura animada, usada em index.html e artifact.html)
+          ../../img/icone-180.png   (ícone da tela inicial do iPhone)
+          ../../img/icone-512.png   (prévia de link no WhatsApp e nas redes, e uso geral)
 
    Como funciona: o PNG é ampliado 4x, cada pixel é classificado em fundo, azul-marinho ou branco,
    e as regiões ligadas viram peças (casa, pássaro, rosto, chave inglesa). Cada peça é vetorizada
@@ -16,6 +19,7 @@ const fs = require('fs');
 const path = require('path');
 const Jimp = require('jimp');
 const potrace = require('potrace');
+const { Resvg } = require('@resvg/resvg-js');
 
 const S = 4;                                             // ampliação antes de vetorizar
 const COLORS = [[104, 112, 251], [1, 14, 118], [252, 252, 253]];   // 0 fundo, 1 azul-marinho, 2 branco
@@ -156,9 +160,26 @@ const animatedSvg = (L) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${V
 </svg>
 `;
 
+/* Ícone quadrado: o fundo azul ocupa tudo, porque o celular arredonda os cantos sozinho. */
+function iconSvg(L) {
+  const [x, y, w, h] = VIEWBOX.split(' ').map(Number), side = Math.max(w, h);
+  const x0 = x - (side - w) / 2, y0 = y - (side - h) / 2;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${y0} ${side} ${side}">
+  <rect x="${x0}" y="${y0}" width="${side}" height="${side}" fill="${PAINT.tile}"/>
+  <path fill="${PAINT.white}" d="${L.house}"/>
+  <path fill="${PAINT.navy}" fill-rule="evenodd" d="${L.birdNavy}"/>
+  <path fill="${PAINT.white}" fill-rule="evenodd" d="${L.birdWhite}"/>
+  <path fill="${PAINT.navy}" fill-rule="evenodd" d="${L.wrench}"/>
+</svg>`;
+}
+
+const png = (svg, size) => new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng();
+
 layers().then((L) => {
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'logo-fixup.svg'), staticSvg(L));
   fs.writeFileSync(path.join(outDir, 'abertura.svg'), animatedSvg(L));
-  console.log('Gerados img/logo-fixup.svg e img/abertura.svg a partir de', path.basename(input));
+  const icon = iconSvg(L);
+  [180, 512].forEach((size) => fs.writeFileSync(path.join(outDir, `icone-${size}.png`), png(icon, size)));
+  console.log('Gerados em img/: logo-fixup.svg, abertura.svg, icone-180.png e icone-512.png, a partir de', path.basename(input));
 }).catch((e) => { console.error(e.message || e); process.exit(1); });

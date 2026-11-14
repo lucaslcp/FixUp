@@ -1,5 +1,7 @@
 # FixUp
 
+<img src="img/logo-fixup.svg" width="96" alt="Logo do FixUp">
+
 Protótipo de um marketplace de serviços sob demanda. O cliente descreve o problema com as próprias
 palavras, vê os profissionais independentes que já resolveram casos parecidos, combina os detalhes
 pelo chat, paga pelo app e acompanha a chegada no mapa.
@@ -79,13 +81,15 @@ está pronto, o que vier por último.
 | 1,45 s | o pássaro dá duas bicadas na parede, com faíscas |
 | 2,45 s | a tela se abre para o app |
 
-Os dois SVGs (`img/abertura.svg` e o logo estático `img/logo-fixup.svg`) são gerados a partir do PNG
-do logo pela ferramenta em `ferramentas/logo`. Para trocar o logo:
+A abertura, o logo estático (`img/logo-fixup.svg`, usado no ícone da aba e na marca ao lado do
+aparelho) e os ícones PNG (`img/icone-180.png` para a tela inicial do iPhone e `img/icone-512.png`
+para a prévia do link no WhatsApp e nas redes) são gerados a partir do PNG do logo pela ferramenta
+em `ferramentas/logo`. Para trocar o logo:
 
 1. Substitua `ferramentas/logo/logo-original.png` pelo novo PNG.
 2. Na pasta `ferramentas/logo`, rode `npm install` (só na primeira vez) e depois `npm run gerar`.
 
-A ferramenta usa o potrace para transformar cada peça em vetor. As linhas-guia da casa e a posição
+A ferramenta usa o potrace para transformar cada peça em vetor e o resvg para gerar os PNGs. As linhas-guia da casa e a posição
 das faíscas estão no início de `gerar.js`; se o desenho do logo mudar, ajuste essas medidas.
 
 ## Banco de trabalhos
@@ -167,8 +171,9 @@ artifact.html         a mesma página, preparada para publicação
 CHANGELOG.md          notas de atualização de cada versão
 css/styles.css        identidade visual (paleta FixUp, temas claro e escuro, abertura)
 img/abertura.svg      abertura animada do logo
-img/logo-fixup.svg    logo em vetor
-ferramentas/logo      gera os dois SVGs a partir do PNG do logo (npm run gerar)
+img/logo-fixup.svg    logo em vetor (ícone da aba e marca)
+img/icone-*.png       ícones da tela inicial do iPhone e da prévia do link
+ferramentas/logo      gera os SVGs e os ícones a partir do PNG do logo (npm run gerar)
 css/leaflet-core.css  regras essenciais do mapa para a versão publicada
 js/config.js          versão, comissão, taxas, provedores de mapa e notas de atualização
 js/geo.js             GPS, distâncias, rotas e endereço

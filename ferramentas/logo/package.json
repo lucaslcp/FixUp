@@ -1,11 +1,12 @@
 {
   "name": "fixup-logo",
   "private": true,
-  "description": "Gera o logo vetorial e a abertura animada do FixUp a partir do PNG do logo.",
+  "description": "Gera o logo vetorial, a abertura animada e os ícones do FixUp a partir do PNG do logo.",
   "scripts": {
     "gerar": "node gerar.js"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
     "potrace": "2.1.8"
   }
 }
