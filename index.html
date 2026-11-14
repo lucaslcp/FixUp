@@ -75,7 +75,22 @@
     </aside>
 
     <!-- Aplicativo -->
-    <div class="device" id="device" data-sb="dark">
+    <div class="device com-abertura" id="device" data-sb="dark">
+      <!-- Abertura animada: aparece enquanto o app carrega (js/app.js decide quando sair) -->
+      <div class="abertura" id="abertura" aria-hidden="true">
+        <div class="ab-centro">
+          <img class="ab-logo" src="img/abertura.svg" alt="" width="200" height="194">
+          <div class="ab-marca">FixUp</div>
+          <div class="ab-frase">O profissional certo para o seu problema</div>
+        </div>
+      </div>
+      <script>
+        (function () {
+          var a = document.getElementById('abertura'), i = a.querySelector('img');
+          function ok() { if (a.dataset.t) return; a.dataset.t = performance.now(); a.classList.add('pronto'); a.dispatchEvent(new Event('fixup-pronto')); }
+          if (i.complete && i.naturalWidth) ok(); else { i.addEventListener('load', ok); i.addEventListener('error', ok); }
+        })();
+      </script>
       <div class="statusbar" aria-hidden="true">
         <span id="sb-time">9:41</span>
         <span class="island"></span>

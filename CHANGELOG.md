@@ -4,6 +4,21 @@ Todas as mudanças do FixUp, da mais recente para a mais antiga.
 As versões seguem o formato `MAIOR.MENOR.CORREÇÃO`: o primeiro número muda quando o app muda de forma
 grande, o segundo quando ganha recursos novos e o terceiro quando só há correções.
 
+## 2.1.0 — 14 de novembro de 2026
+
+### Novo
+
+- **Abertura animada com o novo logo.** Ao abrir o app, o logo se monta na tela azul: a casa se
+  desenha, o pássaro sobe e dá duas bicadas na parede (com faíscas), a chave inglesa gira e encaixa
+  e o nome FixUp aparece. Depois a tela se abre para o app com um zoom suave.
+  - A abertura aparece enquanto o app carrega e sai quando a animação termina, em cerca de 2,5 segundos.
+  - Um toque na tela pula a animação.
+  - Com a opção de reduzir movimento do aparelho ligada, o logo aparece parado por um instante.
+  - Para ver de novo: Perfil > Sobre o app > Ver a abertura de novo.
+- **Logo em vetor** (`img/logo-fixup.svg`), nítido em qualquer tamanho.
+- **Ferramenta do logo** (`ferramentas/logo`): gera o logo vetorial e a abertura a partir do PNG.
+  Se o logo final mudar, basta trocar o PNG e rodar `npm run gerar`.
+
 ## 2.0.0 — 13 de novembro de 2026
 
 O app passa a se chamar **FixUp**. Esta versão muda a forma de encontrar um profissional: em vez de

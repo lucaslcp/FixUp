@@ -1,0 +1,11 @@
+{
+  "name": "fixup-logo",
+  "private": true,
+  "description": "Gera o logo vetorial e a abertura animada do FixUp a partir do PNG do logo.",
+  "scripts": {
+    "gerar": "node gerar.js"
+  },
+  "devDependencies": {
+    "potrace": "2.1.8"
+  }
+}

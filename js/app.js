@@ -204,6 +204,55 @@
   if (!EMBED) window.addEventListener('hashchange', () => render());
   screenEl().addEventListener('scroll', () => { if (current) syncStatusBar(); }, { passive: true });
 
+  /* ---------- Abertura animada ----------
+     A abertura já está na página (index.html) e começa a se animar assim que o logo carrega.
+     Ela sai quando a animação termina e o app está pronto, o que vier por último.
+     Um toque na tela pula a animação. */
+  const ABERTURA_MS = 2450, ABERTURA_REDUZIDA_MS = 700;
+  const menosMovimento = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  let aberturaHtml = '';
+
+  function fecharAbertura() {
+    const el = document.getElementById('abertura');
+    if (!el || el.classList.contains('saindo')) return;
+    el.classList.add('saindo');
+    document.getElementById('device').classList.remove('com-abertura');
+    setTimeout(() => el.remove(), 500);
+  }
+
+  function agendarAbertura() {
+    const el = document.getElementById('abertura');
+    if (!el) return;
+    el.addEventListener('click', fecharAbertura);
+    const dur = menosMovimento() ? ABERTURA_REDUZIDA_MS : ABERTURA_MS;
+    const sair = () => setTimeout(fecharAbertura, Math.max(0, dur - (performance.now() - (+el.dataset.t || performance.now()))));
+    if (el.dataset.t) return sair();
+    el.addEventListener('fixup-pronto', sair, { once: true });
+    setTimeout(fecharAbertura, 4000 + dur);   // o logo não carregou: segue sem ele
+  }
+
+  /** Mostra a abertura de novo (Perfil > Sobre o app). */
+  function reverAbertura() {
+    const device = document.getElementById('device'), old = document.getElementById('abertura');
+    if (old) old.remove();
+    if (!aberturaHtml) return;
+    const box = document.createElement('div');
+    box.innerHTML = aberturaHtml;
+    const el = box.firstElementChild, img = el.querySelector('img');
+    el.classList.remove('saindo', 'pronto');
+    delete el.dataset.t;
+    const ok = () => { if (el.dataset.t) return; el.dataset.t = performance.now(); el.classList.add('pronto'); el.dispatchEvent(new Event('fixup-pronto')); };
+    img.addEventListener('load', ok, { once: true });
+    img.addEventListener('error', ok, { once: true });
+    img.src = img.getAttribute('src').split('?')[0] + '?r=' + Date.now();   // endereço novo: a animação recomeça do zero
+    device.appendChild(el);
+    device.classList.add('com-abertura');
+    ui.sheet.close();
+    agendarAbertura();
+  }
+
+  A['rever-abertura'] = reverAbertura;
+
   /* ---------- Início ---------- */
   function clock() {
     const el = document.getElementById('sb-time');
@@ -212,6 +261,13 @@
 
   /* Ordem: tema -> banco de trabalhos -> estado salvo -> índice da busca -> primeira tela. */
   async function boot() {
+    const ab = document.getElementById('abertura');
+    if (ab) {
+      const copia = ab.cloneNode(true);
+      copia.classList.remove('pronto', 'saindo');
+      copia.removeAttribute('data-t');
+      aberturaHtml = copia.outerHTML;
+    }
     S.theme.apply();
     S.theme.watch();
     document.querySelectorAll('[data-bind="commission"]').forEach((el) => { el.textContent = S.pricing.percent(); });
@@ -226,12 +282,14 @@
     else if (!location.hash) history.replaceState(null, '', '#' + homeOf());
     ready = true;
     render();
+    agendarAbertura();
     S.sim.resumeAll();
     locateUser();
   }
 
   boot().catch((e) => {
     console.error(e);
+    fecharAbertura();
     screenEl().innerHTML = '<div class="empty"><h3>Não foi possível iniciar o app</h3><p class="muted">Recarregue a página para tentar de novo.</p></div>';
   });
 })(window.FixUp = window.FixUp || {});

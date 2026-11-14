@@ -1051,6 +1051,7 @@
           <h3 class="h3">Sobre o app</h3>
           <div class="card flush">
             ${row('sparkles', 'Novidades da versão ' + S.config.version, esc(S.config.releases[0].title), 'data-action="open-news"')}
+            ${row('clapperboard', 'Ver a abertura de novo', 'A animação do logo que aparece ao abrir o app', 'data-action="rever-abertura"')}
             ${row('database', 'Banco de trabalhos', info.jobs + ' trabalhos de ' + info.pros + ' profissionais', 'data-action="open-db"')}
             ${row('rotate-ccw', 'Restaurar demonstração', 'Apaga pedidos, conversas e saldos criados no teste', 'data-action="reset-demo"')}
           </div>

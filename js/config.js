@@ -10,7 +10,7 @@
 
   S.config = {
     appName: 'FixUp',
-    version: '2.0.0',
+    version: '2.1.0',
     embedded,
 
     /** Comissão da plataforma sobre cada serviço concluído (0.08 = 8%). Não há mensalidade. */
@@ -54,6 +54,14 @@
 
     /** Notas de atualização mostradas em Perfil > Novidades (o histórico completo fica no CHANGELOG.md). */
     releases: [
+      {
+        v: '2.1.0', date: '14 nov 2026', title: 'Abertura animada com o novo logo',
+        notes: [
+          'Ao abrir o app, o logo se monta na tela: a casa se desenha, o pássaro sobe e dá duas bicadas e a chave inglesa gira e encaixa.',
+          'Um toque na tela pula a animação. Com a opção de reduzir movimento do aparelho ligada, o logo aparece parado por um instante.',
+          'Para ver de novo: Perfil > Sobre o app > Ver a abertura de novo.'
+        ]
+      },
       {
         v: '2.0.0', date: '13 nov 2026', title: 'O app agora se chama FixUp',
         notes: [

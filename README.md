@@ -39,6 +39,9 @@ de localização e o mapa carrega de forma mais confiável.
 2. Ficar online e receber solicitações próximas, com o valor líquido já calculado.
 3. Atender (deslocamento pela rota, início e conclusão) e ver os ganhos, o extrato e o saque via Pix.
 
+Ao abrir, o app mostra a abertura animada com o logo (um toque pula). Para ver de novo:
+Perfil > Sobre o app > “Ver a abertura de novo”.
+
 O tema fica em Perfil > Aparência (automático, claro ou escuro).
 Em Perfil > “Restaurar demonstração” tudo volta ao estado inicial.
 
@@ -59,6 +62,31 @@ O código fica em `js/match.js`, e o vocabulário em `js/lexicon.js`.
    que o profissional cobrou nos casos parecidos.
 
 Para ensinar uma palavra nova ao app, inclua o termo no conceito certo de `js/lexicon.js`.
+
+## Abertura animada e logo
+
+A abertura fica em `img/abertura.svg`: um SVG que se anima sozinho, com o logo dividido em peças
+(casa, pássaro e chave inglesa). O fundo azul, o nome do app e a saída ficam em `css/styles.css`
+(seção “Abertura animada”), e `js/app.js` decide a hora de sair: quando a animação termina e o app
+está pronto, o que vier por último.
+
+| Momento | O que acontece |
+| --- | --- |
+| 0,15 s | a casa começa a se desenhar, da parede esquerda ao telhado e à chaminé |
+| 0,75 s | o pássaro sobe |
+| 1,15 s | a chave inglesa gira e encaixa |
+| 1,42 s | o nome FixUp aparece, e depois a frase |
+| 1,45 s | o pássaro dá duas bicadas na parede, com faíscas |
+| 2,45 s | a tela se abre para o app |
+
+Os dois SVGs (`img/abertura.svg` e o logo estático `img/logo-fixup.svg`) são gerados a partir do PNG
+do logo pela ferramenta em `ferramentas/logo`. Para trocar o logo:
+
+1. Substitua `ferramentas/logo/logo-original.png` pelo novo PNG.
+2. Na pasta `ferramentas/logo`, rode `npm install` (só na primeira vez) e depois `npm run gerar`.
+
+A ferramenta usa o potrace para transformar cada peça em vetor. As linhas-guia da casa e a posição
+das faíscas estão no início de `gerar.js`; se o desenho do logo mudar, ajuste essas medidas.
 
 ## Banco de trabalhos
 
@@ -137,7 +165,10 @@ O endereço antigo no Netlify (flourishing-druid-dd582d.netlify.app) ficou na ve
 index.html            estrutura da página e moldura do aparelho (versão local)
 artifact.html         a mesma página, preparada para publicação
 CHANGELOG.md          notas de atualização de cada versão
-css/styles.css        identidade visual (paleta FixUp, temas claro e escuro)
+css/styles.css        identidade visual (paleta FixUp, temas claro e escuro, abertura)
+img/abertura.svg      abertura animada do logo
+img/logo-fixup.svg    logo em vetor
+ferramentas/logo      gera os dois SVGs a partir do PNG do logo (npm run gerar)
 css/leaflet-core.css  regras essenciais do mapa para a versão publicada
 js/config.js          versão, comissão, taxas, provedores de mapa e notas de atualização
 js/geo.js             GPS, distâncias, rotas e endereço

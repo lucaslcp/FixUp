@@ -199,6 +199,37 @@ small { font-size: 12.5px; }
 }
 
 /* =========================================================================
+   Abertura animada (o logo se monta enquanto o app carrega)
+   O desenho e o movimento do logo ficam em img/abertura.svg; aqui ficam o fundo,
+   o nome do app e a saída. Quem decide a hora de sair é js/app.js.
+   ========================================================================= */
+
+.abertura {
+  position: absolute; inset: 0; z-index: 70; display: grid; place-items: center; cursor: pointer;
+  padding: var(--safe-top) 24px var(--safe-bottom); color: #fff; overflow: hidden;
+  background: radial-gradient(130% 85% at 50% 42%, #7C82FF 0%, #6870FB 42%, #4C54EC 100%);
+  animation: abSeguro .3s 8s forwards;   /* garantia: some sozinha se o app não carregar */
+}
+.ab-centro { display: flex; flex-direction: column; align-items: center; text-align: center; transform: translateY(-3%); }
+.ab-logo { display: block; width: 200px; max-width: 56vw; height: auto; }
+.ab-marca { margin-top: 14px; font: 800 40px/1 var(--font); letter-spacing: -.035em; opacity: 0; }
+.ab-frase { margin-top: 10px; font-size: 14px; font-weight: 600; letter-spacing: .005em; opacity: 0; }
+.abertura.pronto .ab-marca { animation: abMarca .55s 1.42s cubic-bezier(.2, .9, .25, 1.15) both; }
+.abertura.pronto .ab-frase { animation: abFrase .5s 1.68s ease-out both; }
+.abertura.saindo { animation: abSai .45s cubic-bezier(.4, 0, .2, 1) forwards; pointer-events: none; }
+.abertura.saindo .ab-centro { animation: abCresce .45s cubic-bezier(.4, 0, .2, 1) forwards; }
+.device.com-abertura .statusbar { color: #fff; background: transparent; backdrop-filter: none; }
+
+@keyframes abMarca { from { opacity: 0; transform: translateY(16px) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes abFrase { from { opacity: 0; transform: translateY(8px); } to { opacity: .88; transform: none; } }
+@keyframes abSai { to { opacity: 0; visibility: hidden; } }
+@keyframes abCresce { from { transform: translateY(-3%); } to { transform: translateY(-3%) scale(1.1); } }
+@keyframes abSeguro { to { opacity: 0; visibility: hidden; pointer-events: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .abertura.pronto .ab-marca, .abertura.pronto .ab-frase { animation: none; opacity: 1; }
+}
+
+/* =========================================================================
    Barra inferior
    ========================================================================= */
 
