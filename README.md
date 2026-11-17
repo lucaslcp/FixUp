@@ -41,6 +41,11 @@ de localização e o mapa carrega de forma mais confiável.
 5. Acompanhar o profissional no mapa (o cartão mostra a foto dele para você reconhecer na chegada),
    confirmar a conclusão (libera o pagamento) e avaliar, com fotos do serviço se quiser.
 6. Ver o comprovante de pagamento no chat, no pedido ou na carteira, e baixar ou imprimir.
+7. Agendar: na confirmação do pedido, tocar em “Agendar” e escolher dia e horário (8h às 18h, com
+   2 horas de antecedência). O profissional confirma, e dá para remarcar ou cancelar sem custo até ele
+   sair. Os agendamentos ficam em Início > Agendamentos e em Pedidos. No pedido agendado, “Simular o
+   dia do serviço” adianta o relógio para ver o atendimento acontecer.
+8. Em Início > “Seguro e confiável”, ver como a FixUp protege cada pedido.
 
 **Como profissional** (Perfil > “Você presta serviços?”, ou “Modo profissional” na barra lateral)
 
@@ -202,6 +207,7 @@ serviço; a taxa de deslocamento vai inteira para o profissional.
 | Profissionais, preços e avaliações | Dados de exemplo em `js/data.js` e `js/db.js`, posicionados ao redor do usuário |
 | O outro lado da conversa | Simulado: o profissional (ou o cliente) responde sozinho |
 | Deslocamento do profissional | Simulado e acelerado (segue a rota real em cerca de 25 segundos) |
+| Agendamentos | Reais no navegador: o atendimento começa sozinho no horário marcado, com a página aberta; a confirmação do profissional é simulada |
 | Pagamentos, Pix, cartão, saques | Simulados: nenhum dinheiro é movimentado |
 | Contas, CPFs, fotos, pedidos e conversas | Salvos apenas neste navegador (localStorage e IndexedDB) |
 | CPFs e fotos dos perfis de exemplo | CPFs de teste gerados pelo app; retratos ilustrativos no lugar das fotos |

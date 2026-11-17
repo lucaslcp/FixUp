@@ -10,7 +10,7 @@
 
   S.config = {
     appName: 'FixUp',
-    version: '3.2.0',
+    version: '3.3.0',
     embedded,
 
     /** Parte da plataforma em cada serviço concluído (0.08 = 8%). Não há mensalidade.
@@ -65,6 +65,15 @@
 
     /** Notas de atualização mostradas em Perfil > Novidades (o histórico completo fica no CHANGELOG.md). */
     releases: [
+      {
+        v: '3.3.0', date: '17 nov 2026', title: 'Agendamentos e Seguro e confiável',
+        notes: [
+          'Agende o serviço: na confirmação do pedido, escolha Agora ou Agendar, com dia e horário. O profissional confirma, e dá para remarcar ou cancelar sem custo até ele sair.',
+          'Nova tela de Agendamentos, com os próximos serviços, e seção Agendados em Pedidos.',
+          'Novos blocos na tela inicial: Agendamentos e Seguro e confiável, que resume como a FixUp protege cada pedido.',
+          'Com um pedido em andamento, dá para agendar outro serviço para outro horário.'
+        ]
+      },
       {
         v: '3.2.0', date: '17 nov 2026', title: 'Pica-pau nos blocos de destaque',
         notes: [

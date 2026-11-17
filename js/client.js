@@ -92,6 +92,7 @@
     const eta = rt && rt.etaMin ? rt.etaMin : o.etaMin;
     const left = rt && rt.kmLeft != null ? rt.kmLeft : o.km;
     switch (o.status) {
+      case 'scheduled': return { title: 'Serviço agendado', sub: ui.when(o.scheduledFor), badge: o.confirmedAt ? 'Confirmado' : 'Aguardando' };
       case 'searching': return { title: 'Enviando sua solicitação…', sub: `Aguardando a confirmação de ${n}`, badge: `~${o.etaMin} min` };
       case 'accepted': return { title: `${n} aceitou seu pedido`, sub: 'Preparando a saída para o seu endereço', badge: `~${o.etaMin} min` };
       case 'on_the_way': return { title: `${n} está a caminho`, sub: `Chegada em cerca de ${eta} min · ${km(Math.max(left, 0.05))}`, badge: `${eta} min` };
@@ -155,7 +156,7 @@
     tab: 'home', mode: 'client', statusBar: 'light',
 
     render() {
-      const loc = st().location, near = S.data.near(), active = S.orders.active();
+      const loc = st().location, near = S.data.near(), active = S.orders.active(), next = S.orders.scheduled()[0];
       return `
         <header class="hero">
           <div class="hero-top">
@@ -186,6 +187,21 @@
             <span class="trust-ic art">${ui.ppTile('search')}</span>
             <span class="trust-text"><strong>Quem já resolveu um caso como o seu</strong><span>Descreva o problema com suas palavras. A busca compara com os trabalhos já realizados por cada profissional.</span></span>
           </button>
+        </section>
+
+        <section class="section">
+          <div class="feature-grid">
+            <button class="feature light" data-go="/schedule">
+              <span class="feature-ic art">${ui.ppTile('calendar')}</span>
+              <span class="feature-text"><strong>Agendamentos</strong><span>${next ? 'Próximo: ' + esc(ui.when(next.scheduledFor)) : 'Marque seu serviço'}</span></span>
+              ${icon('chevron-right')}
+            </button>
+            <button class="feature deep" data-action="open-safety">
+              <span class="feature-ic art">${ui.ppTile('shield')}</span>
+              <span class="feature-text"><strong>Seguro e confiável</strong><span>Serviços verificados</span></span>
+              ${icon('chevron-right')}
+            </button>
+          </div>
         </section>
 
         <section class="section">
@@ -220,6 +236,25 @@
       S.sim.on(onSim);
       return () => { S.sim.off(onSim); if (map) map.remove(); };
     }
+  };
+
+  /* "Seguro e confiável": o que a FixUp faz para proteger cada pedido. */
+  A['open-safety'] = () => {
+    const item = (ic, t, s) => `<div class="row static"><span class="row-ic">${icon(ic)}</span><span class="row-main"><strong class="wrap">${t}</strong><small>${s}</small></span></div>`;
+    ui.sheet.open(`
+      <div class="sheet-head"><h3>Seguro e confiável</h3>${closeBtn}</div>
+      <div class="pp-hero">
+        <span class="pp-hero-ic">${ui.ppTile('shield')}</span>
+        <span class="pp-hero-text"><strong>Serviços verificados do começo ao fim</strong><small>Veja como a FixUp protege você em cada pedido.</small></span>
+      </div>
+      <div class="card flush safety">
+        ${item('badge-check', 'Profissionais verificados', 'CPF conferido, foto real do rosto e cursos técnicos no perfil. Quem completa tudo recebe o selo de Profissional Verificado FixUp.')}
+        ${item('lock', 'Pagamento protegido', 'O valor fica retido pela FixUp e só é liberado quando você confirma a conclusão. Se cancelar antes da chegada, o estorno é integral.')}
+        ${item('scan-face', 'Identificação na chegada', 'Você vê o rosto e o CPF parcial do profissional no acompanhamento, e ele vê a sua foto.')}
+        ${item('star', 'Reputação dos dois lados', 'Clientes e profissionais se avaliam, com fotos reais dos serviços. CPF com calote comprovado ou nota muito baixa fica bloqueado.')}
+        ${item('receipt-text', 'Comprovantes autenticados', 'Cada pagamento gera um comprovante com código de autenticação, que você pode baixar ou imprimir.')}
+      </div>
+      <button class="btn btn-primary btn-block" data-go="/account">${icon('shield-check')}Ver minha conta e segurança</button>`);
   };
 
   A['open-cats'] = () => {
@@ -628,18 +663,101 @@
   };
 
   A['request'] = (el) => {
-    const active = S.orders.active();
-    if (active) {
-      ui.toast('Você já tem um pedido em andamento.', 'info');
-      return S.app.go('/track/' + active.id);
-    }
     if (!S.guard.allow('hire')) return;
+    /* Com um pedido em andamento, o novo pedido pode ser agendado para outro horário. */
+    if (S.orders.active()) ui.toast('Você já tem um pedido em andamento. Este pode ser agendado para outro horário.', 'info');
     S.app.go('/checkout/' + el.dataset.arg);
   };
+
+  /* ---------- Agendamento: dias e horários ---------- */
+  const SLOTS = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'];
+  const MIN_LEAD = 2 * 36e5;   // pelo menos 2 h de antecedência
+  const slotTime = (day, slot) => { const d = new Date(day), hm = slot.split(':'); d.setHours(+hm[0], +hm[1], 0, 0); return d.getTime(); };
+  const slotsOf = (day) => SLOTS.filter((s) => slotTime(day, s) >= Date.now() + MIN_LEAD);
+
+  /** Os próximos 7 dias com horário livre (hoje entra só se ainda houver horário). */
+  function schedDays() {
+    const out = [], today = new Date(ui.midnight(Date.now()));
+    for (let i = 0; out.length < 7 && i < 9; i++) {
+      const t = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i).getTime();
+      if (slotsOf(t).length) out.push(t);
+    }
+    return out;
+  }
+
+  /** Mantém dia e horário válidos (o primeiro disponível, se o escolhido já passou). */
+  function fixPick(pick) {
+    const days = schedDays();
+    if (!pick.day || days.indexOf(pick.day) < 0) pick.day = days[0];
+    const slots = slotsOf(pick.day);
+    if (!pick.slot || slots.indexOf(pick.slot) < 0) pick.slot = slots[0];
+    return pick;
+  }
+  const pickTime = (pick) => slotTime(fixPick(pick).day, pick.slot);
+
+  /** Escolha de dia (fileira de datas) e horário (grade). prefix = nome das ações. */
+  function pickerHtml(pick, prefix) {
+    fixPick(pick);
+    const free = slotsOf(pick.day);
+    return `
+      <div class="chips sched-days">${schedDays().map((t) => { const d = new Date(t); return `
+        <button class="day-chip${t === pick.day ? ' active' : ''}" data-action="${prefix}-day" data-arg="${t}"><small>${ui.dayName(t)}</small><b>${d.getDate()}</b><small>${ui.MONTH[d.getMonth()]}</small></button>`; }).join('')}</div>
+      <div class="slot-grid">${SLOTS.map((s) => `<button class="chip sm${s === pick.slot ? ' active' : ''}" data-action="${prefix}-slot" data-arg="${s}"${free.indexOf(s) < 0 ? ' disabled' : ''}>${s}</button>`).join('')}</div>`;
+  }
+
+  /** Redesenha a escolha sem perder a rolagem da fileira de datas. */
+  function redrawPicker(box, html) {
+    const row = box.querySelector('.sched-days'), x = row ? row.scrollLeft : 0;
+    box.innerHTML = html;
+    const row2 = box.querySelector('.sched-days');
+    if (row2) row2.scrollLeft = x;
+    ui.refreshIcons();
+  }
 
   /* =====================================================================
      Confirmação e pagamento (serviço de catálogo)
      ===================================================================== */
+
+  /** Valores do pedido em preparação (preço cego: o cliente vê só o total). */
+  function draftQuote(d) {
+    const pro = S.data.pro(d.proId), svc = pro.services.find((s) => s.id === d.serviceId);
+    const routeKm = d.routeKm != null ? d.routeKm : pro.km;
+    return S.pricing.fromClientPrice(svc.price, S.pricing.defaultDisplacement(routeKm), routeKm);
+  }
+  const payLabel = (d) => `${d.when === 'later' ? 'Pagar e agendar' : 'Pagar'} ${money(draftQuote(d).clientTotalAmount)}`;
+
+  /** Quando: agora ou agendado. Com um pedido em andamento, só dá para agendar. */
+  function whenHtml(pro, d) {
+    const busy = !!S.orders.active();
+    if (busy) d.when = 'later';
+    const later = d.when === 'later';
+    return `
+      <div class="seg when-seg">
+        <button class="${later ? '' : 'active'}" data-action="when-set" data-arg="now"${busy ? ' disabled' : ''}>${icon('zap')}Agora</button>
+        <button class="${later ? 'active' : ''}" data-action="when-set" data-arg="later">${icon('calendar-days')}Agendar</button>
+      </div>
+      ${later ? `
+        ${busy ? '<p class="hint left">Você já tem um pedido em andamento: este serviço fica agendado para outro horário.</p>' : ''}
+        ${pickerHtml(d.pick, 'co')}
+        <p class="when-sum">${icon('calendar-check')}<span><strong>${esc(ui.when(pickTime(d.pick)))}</strong> · ${esc(ui.first(pro.name))} confirma o horário em seguida.</span></p>`
+      : `<p class="when-sum">${icon('clock')}<span><strong>Atendimento imediato</strong> · chegada estimada em ${pro.eta} min</span></p>`}`;
+  }
+
+  function refreshWhen() {
+    const d = S.draft, box = document.getElementById('co-when'), btn = document.getElementById('co-pay');
+    if (!d || !box) return;
+    redrawPicker(box, whenHtml(S.data.pro(d.proId), d));
+    if (btn) btn.textContent = payLabel(d);
+  }
+
+  A['when-set'] = (el) => {
+    const d = S.draft;
+    if (!d || (el.dataset.arg === 'now' && S.orders.active())) return;
+    d.when = el.dataset.arg;
+    refreshWhen();
+  };
+  A['co-day'] = (el) => { if (S.draft) { S.draft.pick.day = +el.dataset.arg; refreshWhen(); } };
+  A['co-slot'] = (el) => { if (S.draft) { S.draft.pick.slot = el.dataset.arg; refreshWhen(); } };
 
   screens.checkout = {
     mode: 'client',
@@ -648,10 +766,10 @@
       const pro = S.data.pro(p.pro), svc = pro && pro.services.find((s) => s.id === p.service);
       if (!svc) return missing('Serviço não encontrado');
       if (!S.draft || S.draft.proId !== pro.id || S.draft.serviceId !== svc.id) {
-        S.draft = { proId: pro.id, serviceId: svc.id, note: '', method: st().wallet.defaultMethod };
+        S.draft = { proId: pro.id, serviceId: svc.id, note: '', method: st().wallet.defaultMethod, when: 'now', pick: {} };
       }
-      const d = S.draft, loc = st().location, routeKm = d.routeKm != null ? d.routeKm : pro.km;
-      const q = S.pricing.fromClientPrice(svc.price, S.pricing.defaultDisplacement(routeKm), routeKm);
+      const d = S.draft, loc = st().location;
+      const q = draftQuote(d);
       return `
         ${backBar('Confirmar pedido')}
         <section class="section first">
@@ -668,6 +786,11 @@
         </section>
 
         <section class="section">
+          <h3 class="h3">Quando</h3>
+          <div id="co-when">${whenHtml(pro, d)}</div>
+        </section>
+
+        <section class="section">
           <h3 class="h3">Local do atendimento</h3>
           <div class="card flush">
             <div class="map-card flat"><div id="checkout-map" class="map"></div></div>
@@ -677,8 +800,8 @@
               <span class="link">Alterar</span>
             </button>
             <div class="row static">
-              <span class="row-ic">${icon('clock')}</span>
-              <span class="row-main"><strong>Atendimento imediato</strong><small id="co-route">Chegada estimada em ${pro.eta} min · ${d.routeKm != null ? km(d.routeKm) + ' pela rota mais curta' : 'calculando a rota…'}</small></span>
+              <span class="row-ic">${icon('route')}</span>
+              <span class="row-main"><strong>Rota mais curta</strong><small id="co-route">${d.routeKm != null ? km(d.routeKm) + ' entre o profissional e você' : 'calculando a rota…'}</small></span>
             </div>
           </div>
         </section>
@@ -694,7 +817,7 @@
           <p class="note">${icon('shield-check')}<span>O valor fica retido pela FixUp e só é liberado ao profissional quando você confirmar a conclusão. O preço que você vê é o preço final.</span></p>
         </section>
 
-        <div class="cta-bar"><button class="btn btn-primary btn-block btn-lg" data-action="pay">Pagar ${money(q.clientTotalAmount)}</button></div>`;
+        <div class="cta-bar"><button class="btn btn-primary btn-block btn-lg" data-action="pay" id="co-pay">${payLabel(d)}</button></div>`;
     },
 
     mount(root, p) {
@@ -728,19 +851,18 @@
   A['pay'] = (el) => {
     const d = S.draft;
     if (!d) return;
-    const active = S.orders.active();
-    if (active) { ui.toast('Você já tem um pedido em andamento.', 'info'); return S.app.go('/track/' + active.id); }
+    const later = d.when === 'later', active = S.orders.active();
+    if (active && !later) { ui.toast('Você já tem um pedido em andamento.', 'info'); return S.app.go('/track/' + active.id); }
     if (!S.guard.allow('hire')) return;
-    const pro = S.data.pro(d.proId), svc = pro.services.find((s) => s.id === d.serviceId);
-    const routeKm = d.routeKm != null ? d.routeKm : pro.km;
-    const total = S.pricing.fromClientPrice(svc.price, S.pricing.defaultDisplacement(routeKm), routeKm).clientTotalAmount;
+    const total = draftQuote(d).clientTotalAmount;
     if (!S.pay.canPay(d.method, total)) return ui.toast('Saldo insuficiente. Escolha outra forma de pagamento.', 'bad');
+    d.scheduledFor = later ? pickTime(d.pick) : null;
 
     const finish = () => {
       const order = S.orders.create(d);
       S.draft = null;
       S.app.replace('/track/' + order.id, {});
-      ui.toast('Pagamento aprovado. Valor protegido até a conclusão.', 'ok');
+      ui.toast(later ? `Serviço agendado para ${ui.when(order.scheduledFor)}. Valor protegido até a conclusão.` : 'Pagamento aprovado. Valor protegido até a conclusão.', 'ok');
     };
     if (d.method === 'pix') return openPix(total, 'Pague com Pix', finish);
     el.classList.add('loading');
@@ -756,15 +878,34 @@
 
   const stepsHtml = (step) => `<ol class="steps">${STEPS.map((s, i) => `<li class="${i < step ? 'done' : i === step ? 'now' : ''}"><span class="bullet">${i < step ? icon('check') : ''}</span><span>${s}</span></li>`).join('')}</ol>`;
 
-  function panelHtml(o, rt) {
-    const pro = S.data.pro(o.proId), t = trackTexts(o, rt);
+  /** Data em bloco (dia da semana, número e mês), usada nos agendamentos. */
+  const dateBlock = (ts) => { const d = new Date(ts); return `<span class="sched-date"><small>${ui.dayName(ts)}</small><b>${d.getDate()}</b><small>${ui.MONTH[d.getMonth()]}</small></span>`; };
+
+  /* Pedido agendado: data, confirmação do profissional, identificação e opções de remarcar ou cancelar. */
+  function schedPanelHtml(o) {
+    const pro = S.data.pro(o.proId), ok = !!o.confirmedAt, n = esc(ui.first(pro.name));
     return `
       <div class="grip"></div>
       <div class="tp-head">
-        <div><h2>${esc(t.title)}</h2><p class="muted" id="tp-sub">${esc(t.sub)}</p></div>
-        <span class="eta" id="tp-badge">${esc(t.badge)}</span>
+        <div><h2>Serviço agendado</h2><p class="muted" id="tp-sub">${esc(ui.when(o.scheduledFor))}</p></div>
+        <span class="eta${ok ? ' ok' : ''}" id="tp-badge">${ok ? 'Confirmado' : 'Aguardando'}</span>
       </div>
-      ${stepsHtml(STEP[o.status])}
+      <div class="sched-card">
+        ${dateBlock(o.scheduledFor)}
+        <span class="row-main"><strong class="wrap">${esc(o.serviceName)}</strong><small>${ui.time(o.scheduledFor)} · ${esc(o.address.label)}</small><small class="${ok ? 'ok-text' : ''}">${ok ? `${n} confirmou o horário.` : `Aguardando ${n} confirmar o horário…`}</small></span>
+      </div>
+      ${idCardHtml(o, pro)}
+      <div class="tp-pay">${icon('lock')}<span><strong>${money(o.amounts.clientTotalAmount)}</strong> retidos com segurança · ${esc(S.pay.label(o.method))}</span></div>
+      <p class="hint left">Você pode remarcar ou cancelar sem custo até ${n} sair para o atendimento. No dia, ${n} sai a tempo de chegar no horário e você acompanha pelo mapa.</p>
+      <div class="sched-actions">
+        <button class="btn btn-soft" data-action="sched-move" data-arg="${o.id}">${icon('calendar-clock')}Remarcar</button>
+        <button class="btn btn-ghost" data-action="cancel-order" data-arg="${o.id}">Cancelar</button>
+      </div>
+      <button class="btn btn-ghost btn-block btn-sm demo-btn" data-action="sched-start" data-arg="${o.id}">${icon('fast-forward')}Simular o dia do serviço (demonstração)</button>`;
+  }
+
+  function idCardHtml(o, pro) {
+    return `
       <div class="id-card">
         ${ui.face(pro, 64, 'big')}
         <div class="id-main"><small>Confira o rosto na chegada</small><strong>${esc(pro.name)}${pro.verified ? ui.verified(16) : ''}</strong><span>${esc(catOf(pro).name)} · <span class="star">${icon('star')}${ui.rating(pro.rating)}</span> · CPF ${S.cpf.hidden((o.parties || {}).provider ? o.parties.provider.cpf : '')}</span></div>
@@ -773,7 +914,20 @@
           <button class="icon-btn soft" data-action="call-pro" aria-label="Ligar">${icon('phone')}</button>
         </div>
       </div>
-      <p class="id-note">${ui.face(st().user, 26)}<span>Sua foto foi enviada a ${esc(ui.first(pro.name))} para que ele reconheça você no local.</span></p>
+      <p class="id-note">${ui.face(st().user, 26)}<span>Sua foto foi enviada a ${esc(ui.first(pro.name))} para que ele reconheça você no local.</span></p>`;
+  }
+
+  function panelHtml(o, rt) {
+    if (o.status === 'scheduled') return schedPanelHtml(o);
+    const pro = S.data.pro(o.proId), t = trackTexts(o, rt);
+    return `
+      <div class="grip"></div>
+      <div class="tp-head">
+        <div><h2>${esc(t.title)}</h2><p class="muted" id="tp-sub">${esc(t.sub)}</p></div>
+        <span class="eta" id="tp-badge">${esc(t.badge)}</span>
+      </div>
+      ${stepsHtml(STEP[o.status])}
+      ${idCardHtml(o, pro)}
       <div class="tp-pay">${icon('lock')}<span><strong>${money(o.amounts.clientTotalAmount)}</strong> retidos com segurança · ${esc(S.pay.label(o.method))}</span></div>
       ${o.status === 'awaiting' ? `<button class="btn btn-primary btn-block btn-lg" data-action="confirm-done" data-arg="${o.id}">${icon('circle-check')}Confirmar e liberar pagamento</button>` : ''}
       ${S.orders.canCancel(o) ? `<button class="btn btn-ghost btn-block btn-sm" data-action="cancel-order" data-arg="${o.id}">Cancelar pedido</button>` : ''}`;
@@ -817,8 +971,10 @@
 
       function paint(order, rt, tick) {
         if (order.id !== o.id) return;
-        if (order.status !== last) {
-          last = order.status;
+        /* redesenha o painel quando muda o status, a confirmação ou o horário agendado */
+        const key = order.status + '|' + (order.confirmedAt || '') + '|' + (order.scheduledFor || '');
+        if (key !== last) {
+          last = key;
           panel.innerHTML = panelHtml(order, rt);
           ui.refreshIcons();
           fit(rt && rt.route ? rt.route.points : [o.proStart, o.address]);
@@ -856,6 +1012,43 @@
   };
 
   A['call-pro'] = () => ui.toast('Ligação protegida: seu número não é compartilhado com o profissional.', 'info');
+
+  /* Remarcar um pedido agendado: outro dia e horário; o profissional confirma de novo. */
+  A['sched-move'] = (el) => {
+    const o = S.orders.get(el.dataset.arg);
+    if (!o || o.status !== 'scheduled') return;
+    const pro = S.data.pro(o.proId), pick = { day: ui.midnight(o.scheduledFor), slot: ui.time(o.scheduledFor) };
+    const label = () => `Remarcar para ${ui.when(pickTime(pick))}`;
+    const draw = () => {
+      const box = document.getElementById('mv-pick'), btn = document.getElementById('mv-save');
+      if (box) redrawPicker(box, pickerHtml(pick, 'mv'));
+      if (btn) btn.textContent = label();
+    };
+    ui.sheet.open(`
+      <div class="sheet-head"><h3>Remarcar</h3>${closeBtn}</div>
+      <p class="muted">Escolha outro dia e horário. ${esc(ui.first(pro.name))} confirma o novo horário em seguida.</p>
+      <div id="mv-pick" class="mv-pick">${pickerHtml(pick, 'mv')}</div>
+      <button class="btn btn-primary btn-block btn-lg" data-action="mv-save" id="mv-save">${esc(label())}</button>`);
+    A['mv-day'] = (b) => { pick.day = +b.dataset.arg; draw(); };
+    A['mv-slot'] = (b) => { pick.slot = b.dataset.arg; draw(); };
+    A['mv-save'] = () => {
+      const ts = pickTime(pick);
+      if (ts === o.scheduledFor) { ui.sheet.close(); return; }
+      S.orders.reschedule(o, ts);
+      if (S.chat) S.chat.note(o.proId, `Agendamento remarcado para ${ui.when(ts)}.`);
+      ui.sheet.close();
+      ui.toast(`Remarcado para ${ui.when(ts)}.`, 'ok');
+    };
+  };
+
+  /* Demonstração: adianta o pedido agendado para o dia do serviço. */
+  A['sched-start'] = (el) => {
+    const o = S.orders.get(el.dataset.arg);
+    if (!o || o.status !== 'scheduled') return;
+    if (S.orders.active()) return ui.toast('Conclua o pedido em andamento antes de simular este.', 'info');
+    S.orders.startNow(o);
+    ui.toast('Demonstração: chegou o dia do serviço.', 'info');
+  };
 
   A['confirm-done'] = (el) => {
     const o = S.orders.get(el.dataset.arg);
@@ -929,7 +1122,7 @@
     return `
       <button class="order-card${o.id === activeId ? ' active' : ''}" data-go="${final ? '/order/' : '/track/'}${o.id}">
         ${avatar(pro, 46)}
-        <span class="row-main"><strong>${esc(o.serviceName)}</strong><small>${esc(pro.name)} · ${ui.day(o.createdAt)}, ${ui.time(o.createdAt)}</small></span>
+        <span class="row-main"><strong>${esc(o.serviceName)}</strong><small>${esc(pro.name)} · ${o.status === 'scheduled' ? esc(ui.when(o.scheduledFor)) : `${ui.day(o.createdAt)}, ${ui.time(o.createdAt)}`}</small></span>
         <span class="order-right"><strong>${money(o.amounts.clientTotalAmount)}</strong>${statusPill(o)}</span>
       </button>`;
   }
@@ -938,12 +1131,14 @@
   const md = (list, detail, open) => `<div class="md${open ? ' has-detail' : ''}"><aside class="md-list">${list}</aside><section class="md-detail">${detail}</section></div>`;
 
   function ordersList(activeId) {
-    const all = S.orders.all(), live = all.filter((o) => !S.orders.isFinal(o)), past = all.filter(S.orders.isFinal);
+    const all = S.orders.all(), sched = S.orders.scheduled(), past = all.filter(S.orders.isFinal);
+    const live = all.filter((o) => !S.orders.isFinal(o) && o.status !== 'scheduled');
     const card = (o) => orderCard(o, activeId);
     return `
       <header class="topbar plain"><h1>Pedidos</h1></header>
       ${live.length ? `<section class="section first"><h3 class="h3">Em andamento</h3><div class="list">${live.map(card).join('')}</div></section>` : ''}
-      <section class="section${live.length ? '' : ' first'}">
+      ${sched.length ? `<section class="section${live.length ? '' : ' first'}"><div class="section-head"><h3>Agendados</h3><button class="link" data-go="/schedule">Ver agenda</button></div><div class="list">${sched.map(card).join('')}</div></section>` : ''}
+      <section class="section${live.length || sched.length ? '' : ' first'}">
         <h3 class="h3">Anteriores</h3>
         ${past.length ? `<div class="list">${past.map(card).join('')}</div>` : `<div class="empty small">${ui.mascot('empty', 76)}<p class="muted">Seus pedidos concluídos aparecem aqui.</p></div>`}
       </section>
@@ -964,7 +1159,63 @@
     }
   };
 
+  /* =====================================================================
+     Agendamentos
+     ===================================================================== */
+
+  function schedCard(o) {
+    const pro = S.data.pro(o.proId), ok = !!o.confirmedAt;
+    return `
+      <button class="sched-card" data-go="/track/${o.id}">
+        ${dateBlock(o.scheduledFor)}
+        <span class="row-main"><strong>${esc(o.serviceName)}</strong><small>${ui.time(o.scheduledFor)} · ${esc(pro.name)}</small><small class="${ok ? 'ok-text' : ''}">${ok ? 'Horário confirmado' : 'Aguardando confirmação'}</small></span>
+        <span class="order-right"><strong>${money(o.amounts.clientTotalAmount)}</strong>${icon('chevron-right', 'muted-ic')}</span>
+      </button>`;
+  }
+
+  screens.schedule = {
+    mode: 'client',
+
+    render() {
+      const list = S.orders.scheduled();
+      const step = (n, t, s) => `<li><b>${n}</b><span><strong>${t}</strong><small>${s}</small></span></li>`;
+      return `
+        ${backBar('Agendamentos')}
+        <section class="section first">
+          <div class="pp-hero">
+            <span class="pp-hero-ic">${ui.ppTile('calendar')}</span>
+            <span class="pp-hero-text"><strong>Marque o serviço para quando for melhor</strong><small>Escolha o dia e o horário na confirmação do pedido. O pagamento fica protegido até a conclusão.</small></span>
+          </div>
+        </section>
+
+        <section class="section">
+          <h3 class="h3">Próximos</h3>
+          ${list.length ? `<div class="list">${list.map(schedCard).join('')}</div>` : `<div class="empty small">${ui.mascot('empty', 76)}<p class="muted">Nenhum serviço agendado ainda.</p></div>`}
+        </section>
+
+        <section class="section">
+          <h3 class="h3">Como funciona</h3>
+          <ol class="how">
+            ${step(1, 'Escolha o profissional e o serviço', 'Pela busca, pelas categorias ou pelo perfil de quem já resolveu um caso como o seu.')}
+            ${step(2, 'Toque em Agendar e escolha dia e horário', 'Horários das 8h às 18h, com pelo menos 2 horas de antecedência.')}
+            ${step(3, 'O profissional confirma o horário', 'No dia, ele sai a tempo de chegar na hora marcada e você acompanha pelo mapa.')}
+          </ol>
+          <p class="note">${icon('shield-check')}<span>Você pode remarcar ou cancelar sem custo até o profissional sair para o atendimento. O valor fica retido e só é liberado quando você confirma a conclusão.</span></p>
+        </section>
+        <div class="spacer"></div>
+
+        <div class="cta-bar"><button class="btn btn-primary btn-block btn-lg" data-go="/search">${icon('search')}Agendar um serviço</button></div>`;
+    },
+
+    mount() {
+      const onSim = (o, rt, tick) => { if (!tick) S.app.refresh(); };
+      S.sim.on(onSim);
+      return () => S.sim.off(onSim);
+    }
+  };
+
   const TIMELINE = {
+    scheduled: 'Serviço agendado e pagamento retido', rescheduled: 'Agendamento remarcado',
     searching: 'Pedido enviado e pagamento retido', accepted: 'Aceito pelo profissional', on_the_way: 'Profissional a caminho',
     arrived: 'Chegou ao local', in_progress: 'Serviço iniciado', awaiting: 'Serviço finalizado pelo profissional',
     completed: 'Conclusão confirmada e pagamento liberado', cancelled: 'Pedido cancelado e valor estornado'
@@ -995,6 +1246,7 @@
             </button>
             <div class="row static"><span class="row-ic">${icon(o.custom ? 'file-text' : 'wrench')}</span><span class="row-main"><strong class="wrap">${esc(o.serviceName)}</strong><small>${o.note ? esc(o.note) : 'Sem observações'}</small></span></div>
             <div class="row static"><span class="row-ic">${icon('map-pin')}</span><span class="row-main"><strong>${esc(o.address.label)}</strong><small>${esc(o.address.sub || '')}</small></span></div>
+            ${o.scheduledFor ? `<div class="row static"><span class="row-ic">${icon('calendar-days')}</span><span class="row-main"><strong>Agendado</strong><small>${esc(ui.when(o.scheduledFor))}</small></span></div>` : ''}
           </div>
         </section>
 

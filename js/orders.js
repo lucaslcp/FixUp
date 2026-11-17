@@ -7,13 +7,13 @@
   'use strict';
 
   const FINAL = ['completed', 'cancelled'];
-  const CANCELLABLE = ['searching', 'accepted', 'on_the_way'];
+  const CANCELLABLE = ['scheduled', 'searching', 'accepted', 'on_the_way'];
   /* Duração de cada etapa na demonstração (ms). O trajeto real levaria minutos. */
   const TIMES = { searching: 2800, accepted: 2200, travel: 24000, arrived: 3500, in_progress: 7000 };
   const NEXT = { searching: 'accepted', accepted: 'on_the_way', arrived: 'in_progress', in_progress: 'awaiting' };
 
   const LABELS = {
-    searching: 'Aguardando profissional', accepted: 'Aceito', on_the_way: 'A caminho', arrived: 'No local',
+    scheduled: 'Agendado', searching: 'Aguardando profissional', accepted: 'Aceito', on_the_way: 'A caminho', arrived: 'No local',
     in_progress: 'Em andamento', awaiting: 'Aguardando confirmação', completed: 'Concluído', cancelled: 'Cancelado'
   };
 
@@ -37,9 +37,33 @@
     clearInterval(rt.tick);
   }
 
+  const liveOf = (order) => live[order.id] || (live[order.id] = { pos: null, route: null, etaMin: order.etaMin, kmLeft: order.km });
+
+  /* Pedido agendado: o profissional confirma o horário e, no dia, sai para o atendimento a tempo de
+     chegar na hora marcada. Até lá o pedido fica parado, com o pagamento retido. */
+  function waitForDay(order) {
+    const rt = liveOf(order);
+    clearTimeout(rt.timer);
+    clearInterval(rt.tick);
+    if (!order.confirmedAt) {
+      rt.timer = setTimeout(() => {
+        order.confirmedAt = Date.now();
+        S.store.save();
+        emit(order);
+        if (S.chat) S.chat.note(order.proId, `Agendamento confirmado: ${S.ui.when(order.scheduledFor)}.`);
+        waitForDay(order);
+      }, TIMES.searching);
+      return;
+    }
+    const delay = order.scheduledFor - order.etaMin * 60e3 - Date.now();
+    if (delay <= 0) { setStatus(order, 'accepted'); run(order); return; }
+    rt.timer = setTimeout(() => waitForDay(order), Math.min(delay, 2147483000));   // limite do setTimeout (~24 dias)
+  }
+
   function run(order) {
     if (FINAL.includes(order.status)) return;
-    const rt = live[order.id] || (live[order.id] = { pos: null, route: null, etaMin: order.etaMin, kmLeft: order.km });
+    if (order.status === 'scheduled') return waitForDay(order);
+    const rt = liveOf(order);
     clearTimeout(rt.timer);
     clearInterval(rt.tick);
 
@@ -78,7 +102,10 @@
   S.orders = {
     all: () => S.store.state.orders,
     get(id) { return this.all().find((o) => o.id === id); },
-    active() { return this.all().find((o) => !FINAL.includes(o.status)); },
+    /** Pedido em andamento agora (os agendados para outro momento não contam). */
+    active() { return this.all().find((o) => !FINAL.includes(o.status) && o.status !== 'scheduled'); },
+    /** Pedidos agendados, do mais próximo para o mais distante. */
+    scheduled() { return this.all().filter((o) => o.status === 'scheduled').sort((a, b) => a.scheduledFor - b.scheduledFor); },
     isFinal: (o) => FINAL.includes(o.status),
     canCancel: (o) => CANCELLABLE.includes(o.status),
     label: (status) => LABELS[status] || status,
@@ -86,6 +113,7 @@
     /** Cria o pedido e retém o pagamento.
         draft = { proId, serviceId, note, method, routeKm } para um serviço de catálogo,
              ou { proId, proposal, method } para uma proposta combinada no chat.
+        Com draft.scheduledFor (data e hora), o pedido fica agendado em vez de começar agora.
         Os valores seguem o preço cego (S.pricing): o pedido guarda os três, cada tela mostra só o seu.
         Os nomes e CPFs das partes ficam registrados no momento do pagamento, para os comprovantes. */
     create(draft) {
@@ -102,7 +130,8 @@
         proStart: { lat: pro.pos.lat, lng: pro.pos.lng }, km: pro.km, etaMin: pro.eta,
         amounts, method: draft.method,
         parties: { client: { name: st.user.name, cpf: st.user.cpf }, provider: { name: pro.name, cpf: S.cpf.fromSeed('pro:' + pro.id) } },
-        status: 'searching', progress: 0, createdAt: now, timeline: [{ status: 'searching', at: now }],
+        status: draft.scheduledFor ? 'scheduled' : 'searching', scheduledFor: draft.scheduledFor || null, confirmedAt: null,
+        progress: 0, createdAt: now, timeline: [{ status: draft.scheduledFor ? 'scheduled' : 'searching', at: now }],
         payStatus: 'held', rating: null
       };
       st.orders.unshift(order);
@@ -126,6 +155,26 @@
       });
       setStatus(order, 'completed');
       if (S.chat) S.chat.receipt(order.proId, order.id);
+    },
+
+    /** Muda o dia e o horário de um pedido agendado. O profissional confirma o novo horário. */
+    reschedule(order, when) {
+      if (order.status !== 'scheduled') return;
+      order.scheduledFor = when;
+      order.confirmedAt = null;
+      order.timeline.push({ status: 'rescheduled', at: Date.now() });
+      S.store.save();
+      emit(order);
+      run(order);
+    },
+
+    /** Demonstração: adianta um pedido agendado para o dia do serviço (o profissional sai agora). */
+    startNow(order) {
+      if (order.status !== 'scheduled') return;
+      stop(order);
+      if (!order.confirmedAt) order.confirmedAt = Date.now();
+      setStatus(order, 'accepted');
+      run(order);
     },
 
     cancel(order) {

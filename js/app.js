@@ -7,7 +7,7 @@
   const ROUTES = [
     ['/home', 'home'], ['/search', 'search'], ['/p/:id', 'proProfile'], ['/checkout/:pro/:service', 'checkout'],
     ['/track/:id', 'track'], ['/orders', 'orders'], ['/order/:id', 'receipt'], ['/wallet', 'wallet'], ['/profile', 'profile'],
-    ['/chats', 'chats'], ['/chat/:id', 'chat'], ['/account', 'account'],
+    ['/chats', 'chats'], ['/chat/:id', 'chat'], ['/account', 'account'], ['/schedule', 'schedule'],
     ['/pro', 'proHome'], ['/pro/earnings', 'proEarnings'], ['/pro/chats', 'proChats'], ['/pro/chat/:id', 'proChat'], ['/pro/profile', 'proEdit'], ['/pro/profile/preview', 'proPreview']
   ].map(([pattern, name]) => {
     const keys = [];
@@ -22,7 +22,7 @@
 
   /* Telas internas: qual item da navegação fica destacado na barra lateral. */
   const PARENT = {
-    proProfile: 'search', checkout: 'search', chat: 'chats', track: 'orders', receipt: 'orders', wallet: 'profile', account: 'profile',
+    proProfile: 'search', checkout: 'search', chat: 'chats', track: 'orders', receipt: 'orders', schedule: 'orders', wallet: 'profile', account: 'profile',
     proChat: 'pchats', proEdit: 'profile', proPreview: 'profile'
   };
   const THEME_ICON = { auto: 'sun-moon', light: 'sun', dark: 'moon' };

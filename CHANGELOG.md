@@ -4,6 +4,32 @@ Todas as mudanças do FixUp, da mais recente para a mais antiga.
 As versões seguem o formato `MAIOR.MENOR.CORREÇÃO`: o primeiro número muda quando o app muda de forma
 grande, o segundo quando ganha recursos novos e o terceiro quando só há correções.
 
+## 3.3.0 — 17 de novembro de 2026
+
+### Novo
+
+- **Agendamento.** Na confirmação do pedido, a seção "Quando" oferece "Agora" ou "Agendar". Agendando,
+  você escolhe o dia (próximos 7 dias) e o horário (8h às 18h, com pelo menos 2 horas de antecedência).
+  O pagamento fica retido como nos outros pedidos.
+  - O pedido nasce com o status "Agendado"; o profissional confirma o horário e a confirmação aparece
+    no pedido e no chat.
+  - No dia, o profissional sai a tempo de chegar na hora marcada e o acompanhamento no mapa começa
+    sozinho.
+  - Dá para remarcar (o profissional confirma de novo) ou cancelar com estorno integral até ele sair.
+  - Na demonstração, "Simular o dia do serviço" adianta o pedido para o dia marcado.
+- **Tela de Agendamentos** (Início > Agendamentos), com os próximos serviços e o passo a passo, e
+  seção "Agendados" em Pedidos.
+- **Blocos novos na tela inicial**, no estilo do pica-pau: "Agendamentos" (mostra o próximo horário
+  marcado) e "Seguro e confiável", que abre um resumo das proteções: profissionais verificados,
+  pagamento protegido, identificação na chegada, reputação dos dois lados e comprovantes autenticados.
+
+### Mudou
+
+- Com um pedido em andamento, tocar em "Solicitar" em outro profissional não leva mais de volta ao
+  pedido atual: a confirmação abre já em "Agendar", para marcar o novo serviço para outro horário.
+- Na confirmação do pedido, a linha "Atendimento imediato" virou "Rota mais curta"; o tempo de chegada
+  aparece na seção "Quando".
+
 ## 3.2.0 — 17 de novembro de 2026
 
 ### Novo

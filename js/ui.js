@@ -54,7 +54,20 @@
     return `<svg viewBox="-1 -1 27 27" fill="#08083A" shape-rendering="crispEdges" aria-hidden="true">${cells}${f(0, 0)}${f(n - 7, 0)}${f(0, n - 7)}</svg>`;
   }
 
-  const ui = S.ui = { esc, money, moneyShort, icon, km, rating, first, avatar, stars, time, day, ago, fakeQr, cssVar };
+  /* Datas futuras (agendamentos): "Hoje", "Amanhã" ou o dia da semana, com dia, mês e hora. */
+  const WEEK = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const MONTH = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  const midnight = (ts) => { const d = new Date(ts); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime(); };
+  function dayName(ts) {
+    const diff = Math.round((midnight(ts) - midnight(Date.now())) / 864e5);
+    return diff === 0 ? 'Hoje' : diff === 1 ? 'Amanhã' : WEEK[new Date(ts).getDay()];
+  }
+  /** "Amanhã, 18 de nov" */
+  const dateLong = (ts) => { const d = new Date(ts); return `${dayName(ts)}, ${d.getDate()} de ${MONTH[d.getMonth()]}`; };
+  /** "Amanhã, 18 de nov às 14:00" */
+  const when = (ts) => `${dateLong(ts)} às ${time(ts)}`;
+
+  const ui = S.ui = { esc, money, moneyShort, icon, km, rating, first, avatar, stars, time, day, ago, fakeQr, cssVar, midnight, dayName, dateLong, when, WEEK, MONTH };
 
   ui.refreshIcons = function () {
     if (window.lucide) window.lucide.createIcons();
@@ -92,7 +105,9 @@
     briefcase: '<path d="M8.5 7V5.2A2.2 2.2 0 0 1 10.7 3h2.6a2.2 2.2 0 0 1 2.2 2.2V7" fill="none" stroke-width="2.2" stroke-linecap="round"/><rect x="2.5" y="7" width="19" height="14" rx="2.6"/><path d="M2.5 13.2h19" fill="none" stroke-width="1.5" class="cut"/><rect x="6.6" y="11.6" width="2.4" height="3.2" rx=".6" class="cut-fill"/><rect x="15" y="11.6" width="2.4" height="3.2" rx=".6" class="cut-fill"/>',
     pin: '<path d="M12 22.5s-7.5-6.4-7.5-12.6a7.5 7.5 0 0 1 15 0c0 6.2-7.5 12.6-7.5 12.6z"/><circle cx="12" cy="9.9" r="2.8" class="cut-fill"/>',
     search: '<circle cx="10.2" cy="10.2" r="6.6" fill="none" stroke-width="3"/><path d="M15.2 15.2 21 21" fill="none" stroke-width="3.4" stroke-linecap="round"/>',
-    user: '<circle cx="12" cy="7.6" r="4.6"/><path d="M3.5 21.5a8.5 8.5 0 0 1 17 0z"/>'
+    user: '<circle cx="12" cy="7.6" r="4.6"/><path d="M3.5 21.5a8.5 8.5 0 0 1 17 0z"/>',
+    calendar: '<path d="M7.6 2.6v4M16.4 2.6v4" fill="none" stroke-width="2.4" stroke-linecap="round"/><rect x="2.8" y="4.6" width="18.4" height="17" rx="2.8"/><path d="M2.8 9.6h18.4" fill="none" stroke-width="1.6" class="cut"/><rect x="5.6" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="10.3" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="15" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="5.6" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="10.3" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="15" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/>',
+    shield: '<path d="M12 2.4 4.2 5.4v6.2c0 5.1 3.4 8.8 7.8 10.2 4.4-1.4 7.8-5.1 7.8-10.2V5.4z"/><path d="M8.4 12.2l2.6 2.6 4.8-5" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="cut"/>'
   };
   const tileGlyph = {};
   Object.keys(TILE_GLYPH).forEach((k) => {
@@ -102,7 +117,7 @@
     tileGlyph[k] = `<g class="ppt-halo">${halo}</g>` +
       `<g class="ppt-glyph">${g.replace(/class="cut"/g, 'class="ppt-cut"').replace(/class="cut-fill"/g, 'class="ppt-cut-fill"')}</g>`;
   });
-  /** Quadrado com o pica-pau e um símbolo no canto: briefcase, pin, search ou user. */
+  /** Quadrado com o pica-pau e um símbolo no canto: briefcase, pin, search, user, calendar ou shield. */
   ui.ppTile = (glyph) => (S.mascotArt
     ? `<svg class="pp-tile" viewBox="92 100 228 228" aria-hidden="true"><use href="#fx-pp-n" class="ppt-n"/><use href="#fx-pp-w" class="ppt-w"/><g transform="translate(236 244) scale(3.15)">${tileGlyph[glyph] || ''}</g></svg>`
     : ui.icon(glyph === 'pin' ? 'map-pin' : glyph));
