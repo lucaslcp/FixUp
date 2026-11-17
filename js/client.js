@@ -30,7 +30,7 @@
 
   const missing = (text) => `${backBar('')}
     <div class="empty">
-      <span class="empty-ic">${icon('search-x')}</span>
+      ${ui.mascot('empty', 84)}
       <h3>${esc(text)}</h3>
       <button class="btn btn-soft" data-go="/home">Voltar ao início</button>
     </div>`;
@@ -47,7 +47,7 @@
           ${avatar(p, 54)}
           <span class="pro-main">
             <span class="pro-line">
-              <span class="pro-name"><span>${esc(p.name)}</span>${p.verified ? icon('badge-check', 'verified') : ''}</span>
+              <span class="pro-name"><span>${esc(p.name)}</span>${p.verified ? ui.verified(16) : ''}</span>
               <strong class="pro-val">${ui.moneyShort(h.price != null ? h.price : p.fromPrice)}</strong>
             </span>
             <span class="pro-line">
@@ -111,7 +111,7 @@
         <div class="qr">${ui.fakeQr(Math.round(amount * 100))}</div>
         <strong class="pix-amount">${money(amount)}</strong>
         <button class="pix-code" data-action="pix-copy" data-arg="${esc(code)}"><span>${esc(code)}</span>${icon('copy')}</button>
-        <div class="pix-wait" id="pix-wait"><span class="spinner"></span>Aguardando pagamento…</div>
+        <div class="pix-wait" id="pix-wait">${ui.loader(26)}Aguardando pagamento…</div>
         <p class="hint">Demonstração: a confirmação acontece automaticamente em alguns segundos.</p>
       </div>`, { onClose() { clearTimeout(t1); clearTimeout(t2); } });
     t1 = setTimeout(() => {
@@ -187,7 +187,7 @@
         </section>
 
         <section class="section">
-          <div class="section-head"><h3>Perto de você</h3><button class="link" data-go="/search?view=map">Ver no mapa</button></div>
+          <div class="section-head">${ui.heading('Perto de você')}<button class="link" data-go="/search?view=map">Ver no mapa</button></div>
           <div class="map-card">
             <div id="home-map" class="map"></div>
             <button class="map-cover" data-go="/search?view=map" aria-label="Abrir mapa"></button>
@@ -320,7 +320,7 @@
     if (!list.length) {
       return `${understoodHtml(r.understood)}
         <div class="empty">
-          <span class="empty-ic">${icon('search-x')}</span>
+          ${ui.mascot('empty', 84)}
           <h3>Nenhum profissional encontrado</h3>
           <p class="muted">Tente descrever de outro jeito: o que é (aparelho ou serviço) e o que está acontecendo.</p>
           <button class="btn btn-soft" data-action="search-clear">Limpar busca</button>
@@ -432,7 +432,7 @@
     let timer = null;
     ui.sheet.open(`
       <div class="match" id="match">
-        <span class="radar big"><i></i><i></i><i></i>${icon('navigation')}</span>
+        ${ui.loader(72)}
         <h3>Procurando o melhor profissional</h3>
         <p class="muted">Comparando distância, avaliação e disponibilidade…</p>
       </div>`, { onClose() { clearTimeout(timer); } });
@@ -478,7 +478,7 @@
         ${backBar('', `<button class="icon-btn${fav ? ' fav' : ''}" data-action="toggle-fav" data-arg="${pro.id}" aria-label="Favoritar">${icon('heart')}</button>`)}
         <section class="profile-head">
           ${avatar(pro, 84)}
-          <h1>${esc(pro.name)}${pro.verified ? icon('badge-check', 'verified') : ''}</h1>
+          <h1>${esc(pro.name)}${pro.verified ? ui.verified(22) : ''}</h1>
           <p class="muted">${esc(catOf(pro).name)} · na FixUp desde ${pro.since}</p>
           <span class="avail pill${pro.availableNow ? ' on' : ''}">${esc(pro.availLabel)}</span>
           <div class="stats">
@@ -501,7 +501,7 @@
         <section class="section">
           <h3 class="h3">Sobre</h3>
           <p class="body">${esc(pro.bio)}</p>
-          <div class="badges"><span>${icon('badge-check')}Identidade verificada</span><span>${icon('shield-check')}Pagamento protegido</span></div>
+          <div class="badges">${pro.verified ? `<span class="seal">${ui.mascot('badge', 22)}Profissional Verificado FixUp</span>` : ''}<span>${icon('shield-check')}Pagamento protegido</span></div>
         </section>
 
         <section class="section">
@@ -518,7 +518,7 @@
         </section>
 
         <section class="section">
-          <div class="section-head"><h3>Trabalhos realizados</h3><span class="muted sm">${jobs.length} no histórico</span></div>
+          <div class="section-head">${ui.heading('Trabalhos realizados')}<span class="muted sm">${jobs.length} no histórico</span></div>
           <div class="kinds">${S.db.kinds(pro.id).slice(0, 4).map((k) => `<span>${esc(k.label)}<b>${k.count}</b></span>`).join('')}</div>
           <div class="jobs">${recent.map((j) => ui.jobCard(j)).join('')}</div>
           <button class="btn btn-soft btn-block" data-action="open-jobs" data-arg="${pro.id}">Ver os ${jobs.length} trabalhos</button>
@@ -526,7 +526,7 @@
 
         ${reviews.length ? `
         <section class="section">
-          <div class="section-head"><h3>Avaliações</h3><span class="muted sm">${ui.rating(pro.rating)} de média</span></div>
+          <div class="section-head">${ui.heading('Avaliações')}<span class="muted sm">${ui.rating(pro.rating)} de média</span></div>
           <div class="reviews">${reviews.map(reviewCard).join('')}</div>
         </section>` : ''}
 
@@ -854,7 +854,7 @@
       ${live.length ? `<section class="section first"><h3 class="h3">Em andamento</h3><div class="list">${live.map(card).join('')}</div></section>` : ''}
       <section class="section${live.length ? '' : ' first'}">
         <h3 class="h3">Anteriores</h3>
-        ${past.length ? `<div class="list">${past.map(card).join('')}</div>` : `<div class="empty small"><span class="empty-ic">${icon('receipt-text')}</span><p class="muted">Seus pedidos concluídos aparecem aqui.</p></div>`}
+        ${past.length ? `<div class="list">${past.map(card).join('')}</div>` : `<div class="empty small">${ui.mascot('empty', 76)}<p class="muted">Seus pedidos concluídos aparecem aqui.</p></div>`}
       </section>
       <div class="spacer"></div>`;
   }
@@ -863,7 +863,7 @@
     tab: 'orders', mode: 'client',
 
     render() {
-      return md(ordersList(null), `<div class="md-empty"><span class="empty-ic">${icon('receipt-text')}</span><h3>Escolha um pedido</h3><p>Os detalhes e o comprovante aparecem aqui.</p></div>`, false);
+      return md(ordersList(null), `<div class="md-empty">${ui.mascot('empty', 76)}<h3>Escolha um pedido</h3><p>Os detalhes e o comprovante aparecem aqui.</p></div>`, false);
     },
 
     mount() {

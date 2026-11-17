@@ -113,7 +113,7 @@
 
   /* Lista + detalhe: no celular aparece um de cada vez; em telas largas, lado a lado. */
   const md = (list, detail, open) => `<div class="md${open ? ' has-detail' : ''}"><aside class="md-list">${list}</aside><section class="md-detail">${detail}</section></div>`;
-  const pickOne = (text) => `<div class="md-empty"><span class="empty-ic">${icon('messages-square')}</span><h3>Escolha uma conversa</h3><p>${text}</p></div>`;
+  const pickOne = (text) => `<div class="md-empty">${ui.mascot('empty', 76)}<h3>Escolha uma conversa</h3><p>${text}</p></div>`;
 
   /** Mantém a lista ao lado atualizada enquanto uma conversa está aberta. */
   function keepList(root, html) {
@@ -302,7 +302,7 @@
       <header class="topbar plain"><h1>Conversas</h1></header>
       <section class="section first">
         ${list.length ? `<div class="list">${list.map((c) => { const p = S.data.pro(c.proId); return chatRow('/chat/' + p.id, p, S.data.cat(p.cat).name, c, p.id === activeId); }).join('')}</div>` : `
-        <div class="empty small"><span class="empty-ic">${icon('messages-square')}</span><h3>Nenhuma conversa ainda</h3>
+        <div class="empty small">${ui.mascot('empty', 76)}<h3>Nenhuma conversa ainda</h3>
           <p class="muted">Abra o perfil de um profissional e toque em “Conversar” para pedir um orçamento sob medida.</p>
           <button class="btn btn-soft" data-go="/search?focus=1">Buscar profissionais</button></div>`}
       </section>
@@ -465,7 +465,7 @@
       <header class="topbar plain"><h1>Conversas</h1></header>
       <section class="section first">
         ${list.length ? `<div class="list">${list.map((c) => chatRow('/pro/chat/' + c.id, { name: c.client, hue: c.hue }, c.topic, c, c.id === activeId)).join('')}</div>`
-          : `<div class="empty small"><span class="empty-ic">${icon('messages-square')}</span><p class="muted">Quando um cliente pedir um orçamento, a conversa aparece aqui.</p></div>`}
+          : `<div class="empty small">${ui.mascot('empty', 76)}<p class="muted">Quando um cliente pedir um orçamento, a conversa aparece aqui.</p></div>`}
       </section>
       <section class="section"><div class="fee-note">${icon('file-plus-2')}<span>Combine o serviço e envie uma <strong>proposta personalizada</strong>. O cliente paga pelo app e o valor fica garantido para você.</span></div></section>
       <div class="spacer"></div>`;

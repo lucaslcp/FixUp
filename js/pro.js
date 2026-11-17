@@ -89,13 +89,13 @@
     if (p.online) {
       return `
         <div class="radar-card">
-          <span class="radar"><i></i><i></i><i></i>${icon('navigation')}</span>
+          ${ui.loader(52)}
           <div><h3>Procurando solicitações</h3><p>Você aparece para clientes em um raio de ${S.config.coverageKm} km.</p></div>
         </div>`;
     }
     return `
       <div class="empty-card">
-        <span class="empty-ic">${icon('power')}</span>
+        ${ui.mascot('empty', 76)}
         <h3>Você está offline</h3>
         <p>Fique online para receber solicitações de clientes próximos.</p>
         <button class="btn btn-primary btn-block" data-action="pro-toggle">Ficar online</button>

@@ -1026,3 +1026,28 @@ button.row:hover, .method:hover { background: var(--tint-2); }
 @media (min-width: 1024px) and (max-width: 1279px) {
   .list .pro-from { display: none; }
 }
+
+/* =========================================================================
+   Mascote (pica-pau): selo de verificado, estados vazios, carregamento e títulos
+   ========================================================================= */
+
+.pp { display: inline-block; flex: none; vertical-align: middle; }
+.pp-badge .pp-bg, .pp-loader .pp-bg { fill: var(--primary); }
+.pp-badge .pp-n, .pp-loader .pp-n { fill: #fff; }
+.pp-badge .pp-w, .pp-loader .pp-w { fill: var(--primary); }
+.pp-empty .pp-bg { fill: var(--tint); }
+.pp-empty .pp-n { fill: var(--accent-strong); }
+.pp-empty .pp-w { fill: var(--card); }
+.pp-mark { color: var(--accent); }
+.pp-verified { display: inline-flex; flex: none; }
+.pp-title { display: inline-flex; align-items: center; gap: 8px; }
+.pp-loading { display: inline-grid; place-items: center; border-radius: 50%; animation: ring 1.6s ease-out infinite; }
+.pp-loading .pp-bird { transform-box: view-box; transform-origin: 30% 85%; animation: ppPeck .72s ease-in-out infinite; }
+.seal { display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px 0 5px; border-radius: 999px; background: var(--tint); color: var(--accent-strong); font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.empty > .pp-empty, .md-empty > .pp-empty, .empty-card > .pp-empty { margin-bottom: 4px; }
+.match > .pp-loading { margin: 26px 0 18px; }
+.pix-wait .pp-loading { animation: none; }
+@keyframes ppPeck { 0%, 100% { transform: none; } 38% { transform: rotate(9deg); } 58% { transform: rotate(-1.5deg); } }
+@media (prefers-reduced-motion: reduce) { .pp-loading, .pp-loading .pp-bird { animation: none; } }
+.badges .seal { padding-left: 5px; }
+.profile-head h1 .pp-verified { margin-left: 2px; }

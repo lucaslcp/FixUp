@@ -181,5 +181,15 @@ layers().then((L) => {
   fs.writeFileSync(path.join(outDir, 'abertura.svg'), animatedSvg(L));
   const icon = iconSvg(L);
   [180, 512].forEach((size) => fs.writeFileSync(path.join(outDir, `icone-${size}.png`), png(icon, size)));
-  console.log('Gerados em img/: logo-fixup.svg, abertura.svg, icone-180.png e icone-512.png, a partir de', path.basename(input));
+  /* Desenho do pica-pau para o componente de mascote do app (js/ui.js usa em selos, estados vazios e carregamento). */
+  fs.writeFileSync(path.resolve(__dirname, '..', '..', 'js', 'mascote.js'), `/* FixUp — desenho do mascote (pica-pau). Gerado por ferramentas/logo/gerar.js: não edite à mão. */
+(function (S) {
+  'use strict';
+  S.mascotArt = {
+    navy: '${L.birdNavy}',
+    white: '${L.birdWhite}'
+  };
+})(window.FixUp = window.FixUp || {});
+`);
+  console.log('Gerados em img/: logo-fixup.svg, abertura.svg, icone-180.png e icone-512.png; e js/mascote.js, a partir de', path.basename(input));
 }).catch((e) => { console.error(e.message || e); process.exit(1); });

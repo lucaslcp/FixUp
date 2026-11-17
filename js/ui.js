@@ -60,6 +60,36 @@
     if (window.lucide) window.lucide.createIcons();
   };
 
+  /* ---------- Mascote (pica-pau) ----------
+     O desenho vem de js/mascote.js e entra na página uma vez só; cada uso aponta para ele.
+     Variações: badge (selo redondo) · mark (silhueta de uma cor, para títulos) ·
+                empty (ilustração para estados vazios) · loader (bicando, para carregamento) */
+  if (S.mascotArt) {
+    const holder = document.createElement('div');
+    holder.innerHTML = `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+      <path id="fx-pp-n" fill-rule="evenodd" d="${S.mascotArt.navy}"/><path id="fx-pp-w" fill-rule="evenodd" d="${S.mascotArt.white}"/>
+      <clipPath id="fx-pp-head"><circle cx="215" cy="204" r="114"/></clipPath><clipPath id="fx-pp-full"><circle cx="205" cy="215" r="126"/></clipPath>
+    </defs></svg>`;
+    document.body.appendChild(holder.firstChild);
+  }
+  const PP_BIRD = '<g class="pp-bird"><use href="#fx-pp-n" class="pp-n"/><use href="#fx-pp-w" class="pp-w"/></g>';
+  const PP_HEAD = `<circle class="pp-bg" cx="215" cy="204" r="114"/><g clip-path="url(#fx-pp-head)">${PP_BIRD}</g>`;
+
+  ui.mascot = function (variant, size) {
+    const s = size || 20, box = (vb, body) => `<svg class="pp pp-${variant}" width="${s}" height="${s}" viewBox="${vb}" aria-hidden="true">${body}</svg>`;
+    if (!S.mascotArt) return '';
+    if (variant === 'mark') return box('101 90 228 228', '<g clip-path="url(#fx-pp-head)"><use href="#fx-pp-n" fill="currentColor"/></g>');
+    if (variant === 'empty') return box('79 89 252 252', `<circle class="pp-bg" cx="205" cy="215" r="126"/><g clip-path="url(#fx-pp-full)">${PP_BIRD}</g>`);
+    return box('101 90 228 228', PP_HEAD);   // badge e loader
+  };
+
+  /** Selo de conta verificada, com o pica-pau. */
+  ui.verified = (size) => `<span class="pp-verified" title="Profissional Verificado FixUp" aria-label="Profissional Verificado FixUp">${ui.mascot('badge', size || 16)}</span>`;
+  /** Indicador de carregamento: o pica-pau bicando. */
+  ui.loader = (size) => `<span class="pp-loading" role="status" aria-label="Carregando">${ui.mascot('loader', size || 44)}</span>`;
+  /** Título de seção com a marca do mascote. */
+  ui.heading = (text) => `<h3 class="pp-title">${ui.mascot('mark', 20)}<span>${esc(text)}</span></h3>`;
+
   /* ---------- Trabalhos realizados ---------- */
   const jobExtra = (j) => [j.device, j.brand, j.model].filter(Boolean).join(' ');
 
