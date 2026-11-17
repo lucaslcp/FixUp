@@ -210,25 +210,45 @@ small { font-size: 12.5px; }
   padding: var(--safe-top) 24px var(--safe-bottom); color: #fff; overflow: hidden;
   background: radial-gradient(130% 85% at 50% 42%, #7C82FF 0%, #6870FB 42%, #4C54EC 100%);
   animation: abSeguro .3s 8s forwards;   /* garantia: some sozinha se o app não carregar */
+  will-change: opacity;
 }
-.ab-centro { display: flex; flex-direction: column; align-items: center; text-align: center; transform: translateY(-3%); }
+.ab-centro { display: flex; flex-direction: column; align-items: center; text-align: center; transform: translateY(-3%); will-change: transform; }
 .ab-logo { display: block; width: 200px; max-width: 56vw; height: auto; }
-.ab-marca { margin-top: 14px; font: 800 40px/1 var(--font); letter-spacing: -.035em; opacity: 0; }
-.ab-frase { margin-top: 10px; font-size: 14px; font-weight: 600; letter-spacing: .005em; opacity: 0; }
+.ab-logo .g { fill: none; stroke: #fff; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.ab-logo .ave { transform-box: fill-box; transform-origin: 50% 100%; transform: translateY(105%); will-change: transform; }
+.ab-logo .bico { transform-box: fill-box; transform-origin: 0% 100%; will-change: transform; }
+.ab-logo .chave { transform-box: fill-box; transform-origin: 50% 50%; transform: rotate(-200deg) scale(0); will-change: transform; }
+.ab-logo .faisca { stroke: #fff; stroke-width: 6; stroke-linecap: round; fill: none; opacity: 0; transform-box: view-box; transform-origin: 340px 181px; will-change: transform, opacity; }
+.abertura.pronto .ab-logo .d1 { animation: abRisco .30s .15s cubic-bezier(.5, 0, .3, 1) both; }
+.abertura.pronto .ab-logo .d2 { animation: abRisco .55s .40s cubic-bezier(.45, 0, .25, 1) both; }
+.abertura.pronto .ab-logo .d3 { animation: abRisco .22s .88s cubic-bezier(.4, 0, .2, 1) both; }
+.abertura.pronto .ab-logo .d4 { animation: abRisco .22s .90s cubic-bezier(.4, 0, .2, 1) both; }
+.abertura.pronto .ab-logo .ave { animation: abSobe .62s .75s cubic-bezier(.22, 1.15, .36, 1) both; }
+.abertura.pronto .ab-logo .bico { animation: abBica .62s 1.45s ease-in-out both; }
+.abertura.pronto .ab-logo .chave { animation: abGira .58s 1.15s cubic-bezier(.3, 1.4, .5, 1) both; }
+.abertura.pronto .ab-logo .faisca { animation: abBrilho .31s 1.52s ease-out 2 both; }
+.ab-marca { margin-top: 14px; font: 800 40px/1 var(--font); letter-spacing: -.035em; opacity: 0; will-change: transform, opacity; }
+.ab-frase { margin-top: 10px; font-size: 14px; font-weight: 600; letter-spacing: .005em; opacity: 0; will-change: transform, opacity; }
 .abertura.pronto .ab-marca { animation: abMarca .55s 1.42s cubic-bezier(.2, .9, .25, 1.15) both; }
 .abertura.pronto .ab-frase { animation: abFrase .5s 1.68s ease-out both; }
 .abertura.saindo { animation: abSai .45s cubic-bezier(.4, 0, .2, 1) forwards; pointer-events: none; }
 .abertura.saindo .ab-centro { animation: abCresce .45s cubic-bezier(.4, 0, .2, 1) forwards; }
 .device.com-abertura .statusbar { color: #fff; background: transparent; backdrop-filter: none; }
 
+@keyframes abRisco { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes abSobe { from { transform: translateY(105%); } to { transform: none; } }
+@keyframes abGira { from { transform: rotate(-200deg) scale(0); } to { transform: none; } }
+@keyframes abBica {
+  0%, 50%, 100% { transform: none; }
+  18%, 68% { transform: rotate(7deg); }
+  30%, 80% { transform: rotate(-1deg); }
+}
+@keyframes abBrilho { 0% { opacity: 0; transform: scale(.4); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.25); } }
 @keyframes abMarca { from { opacity: 0; transform: translateY(16px) scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes abFrase { from { opacity: 0; transform: translateY(8px); } to { opacity: .88; transform: none; } }
 @keyframes abSai { to { opacity: 0; visibility: hidden; } }
 @keyframes abCresce { from { transform: translateY(-3%); } to { transform: translateY(-3%) scale(1.1); } }
 @keyframes abSeguro { to { opacity: 0; visibility: hidden; pointer-events: none; } }
-@media (prefers-reduced-motion: reduce) {
-  .abertura.pronto .ab-marca, .abertura.pronto .ab-frase { animation: none; opacity: 1; }
-}
 
 /* =========================================================================
    Barra inferior
