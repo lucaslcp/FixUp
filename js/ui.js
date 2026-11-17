@@ -98,20 +98,45 @@
 
   const LEVEL = { same: ['same', 'Mesmo problema'], similar: ['similar', 'Trabalho parecido'] };
 
-  /** Cartão de um trabalho do banco. `level` (opcional) destaca o quanto ele se parece com a busca. */
-  ui.jobCard = function (j, level) {
+  /** Cartão de um trabalho do banco. `level` (opcional) destaca o quanto ele se parece com a busca.
+      opts.provider: o próprio profissional está vendo, então o valor mostrado é o líquido que ele recebeu.
+      opts.photos: número de miniaturas de fotos do serviço (0 para não mostrar). */
+  ui.jobCard = function (j, level, opts) {
+    opts = opts || {};
     const x = jobExtra(j), lv = LEVEL[level];
+    const value = opts.provider ? S.pricing.fromClientPrice(j.price, 0).providerNetAmount : j.price;
+    const shots = opts.photos === 0 || !S.media ? '' : S.media.strip(S.media.ofJob(j), opts.photos || 3, 'sm');
     return `
       <article class="job${lv ? ' hit' : ''}">
-        <div class="job-top"><strong>${esc(j.title)}</strong><b>${moneyShort(j.price)}</b></div>
+        <div class="job-top"><strong>${esc(j.title)}</strong><b>${opts.provider ? money(value) : moneyShort(value)}</b></div>
         ${x ? `<p class="job-dev">${esc(x.charAt(0).toUpperCase() + x.slice(1))}</p>` : ''}
         ${j.problem ? `<p class="job-problem">“${esc(j.problem)}”</p>` : ''}
+        ${shots}
         <div class="job-meta">
           ${lv ? `<span class="lvl ${lv[0]}">${lv[1]}</span>` : ''}
           ${j.rating ? `<span class="star">${icon('star')}${j.rating},0</span>` : '<span>Aguardando avaliação</span>'}
           <span>${ago(j.doneAt)}</span>${j.client ? `<span>${esc(j.client)}</span>` : ''}
         </div>
       </article>`;
+  };
+
+  /* ---------- Fotos de identificação ----------
+     Quem enviou a foto do rosto aparece com ela. Os perfis de exemplo não têm fotos reais: no lugar,
+     aparece um retrato ilustrativo (uma silhueta), sempre marcado como tal. */
+
+  /** Retrato ilustrativo (silhueta sobre um degradê), como imagem. */
+  ui.portrait = function (name, hue) {
+    const h = hue == null ? 240 : hue;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${h} 78% 74%)"/><stop offset="1" stop-color="hsl(${h + 14} 70% 42%)"/></linearGradient></defs>` +
+      `<rect width="120" height="120" fill="url(#g)"/><circle cx="60" cy="47" r="21" fill="#fff" fill-opacity=".9"/><path d="M16 120c3-27 22-42 44-42s41 15 44 42z" fill="#fff" fill-opacity=".9"/></svg>`;
+    return 'data:image/svg+xml,' + encodeURIComponent(svg);
+  };
+
+  /** Foto de uma pessoa: a enviada por ela ou, se não houver, o retrato ilustrativo. */
+  ui.face = function (person, size, cls) {
+    const src = person.photo || ui.portrait(person.name, person.hue), s = size || 48;
+    const demo = !person.photo || person.photoDemo;
+    return `<img class="face${cls ? ' ' + cls : ''}${demo ? ' demo' : ''}" src="${src}" width="${s}" height="${s}" alt="${esc(demo ? 'Retrato ilustrativo de ' + person.name : 'Foto de ' + person.name)}" title="${demo ? 'Retrato ilustrativo (perfil de demonstração)' : esc(person.name)}">`;
   };
 
   /* ---------- Tema (claro, escuro ou automático) ---------- */

@@ -31,8 +31,8 @@
     /** Autoriza o pagamento e retém o valor até a conclusão do serviço. */
     hold(order) {
       const w = wallet();
-      if (order.method === 'wallet') w.balance = S.pricing.round2(w.balance - order.quote.total);
-      w.tx.unshift({ id: S.store.nextId('t'), kind: 'service', orderId: order.id, title: order.serviceName, amount: -order.quote.total, method: order.method, at: Date.now(), state: 'held' });
+      if (order.method === 'wallet') w.balance = S.pricing.round2(w.balance - order.amounts.clientTotalAmount);
+      w.tx.unshift({ id: S.store.nextId('t'), kind: 'service', orderId: order.id, title: order.serviceName, amount: -order.amounts.clientTotalAmount, method: order.method, at: Date.now(), state: 'held' });
       order.payStatus = 'held';
     },
 
@@ -46,7 +46,7 @@
     /** Pedido cancelado: devolve o valor integral ao cliente. */
     refund(order) {
       const w = wallet(), tx = findTx(order);
-      if (order.method === 'wallet') w.balance = S.pricing.round2(w.balance + order.quote.total);
+      if (order.method === 'wallet') w.balance = S.pricing.round2(w.balance + order.amounts.clientTotalAmount);
       if (tx) tx.state = 'refunded';
       order.payStatus = 'refunded';
     },

@@ -19,12 +19,18 @@
      rating    nota de 1 a 5 (null enquanto o cliente não avalia) · review: comentário
      client    primeiro nome e inicial do cliente
      source    "seed" (dados de exemplo) ou "app" (criado por um pedido feito no app) · orderId
+     shots     quantas imagens ilustrativas o trabalho de exemplo mostra (0 a 2)
+
+   Tabela "media" (chave: id · índices: owner, jobId): fotos enviadas pelos usuários
+     owner     profissional dono da foto · kind: "job" (foto de um serviço) ou "portfolio"
+     jobId     trabalho a que a foto pertence · by: quem enviou ("client" ou "provider")
+     src       a imagem, já reduzida (data URL JPEG) · caption · at
 
    Em produção, esta tabela fica no servidor (PostgreSQL, por exemplo) com os mesmos campos. */
 (function (S) {
   'use strict';
 
-  const DB_NAME = 'fixup', DB_VERSION = 1, SEED_VERSION = 1;
+  const DB_NAME = 'fixup', DB_VERSION = 2, SEED_VERSION = 2;
   const DAY = 864e5, HOUR = 36e5;
 
   /* =====================================================================
@@ -388,6 +394,9 @@
         doneAt: Math.round(now - days * DAY - rnd() * 8 * HOUR), rating, review: rnd() < 0.5 ? pick(REVIEWS[rating]) : '',
         client: pick(CLIENTS), source: 'seed'
       });
+      /* Parte dos trabalhos bem avaliados mostra imagens ilustrativas (antes e depois, ou só o resultado). */
+      const job = out[out.length - 1];
+      job.shots = job.review && rating >= 4 ? (hash(job.id + ':fotos') % 10 < 6 ? 2 : 1) : 0;
     }
     return out;
   }
@@ -427,6 +436,11 @@
             jobs.createIndex('doneAt', 'doneAt');
           }
           if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'key' });
+          if (!db.objectStoreNames.contains('media')) {
+            const media = db.createObjectStore('media', { keyPath: 'id' });
+            media.createIndex('owner', 'owner');
+            media.createIndex('jobId', 'jobId');
+          }
         };
         r.onsuccess = () => finish(r.result);
         r.onerror = () => finish(null);
@@ -453,7 +467,7 @@
   /* =====================================================================
      Banco em uso (cópia em memória + gravação no IndexedDB)
      ===================================================================== */
-  let idb = null, mem = [], byPro = {}, statsCache = {};
+  let idb = null, mem = [], mediaMem = [], byPro = {}, statsCache = {};
 
   function reindex() {
     mem.sort((a, b) => b.doneAt - a.doneAt);
@@ -480,6 +494,7 @@
             await putAll(idb, 'meta', [{ key: 'seed', v: SEED_VERSION, at: Date.now() }]);
           }
           mem = await getAll(idb, 'jobs');
+          mediaMem = await getAll(idb, 'media');
           db.persistent = true;
         } catch (e) {
           console.warn('FixUp: IndexedDB indisponível, usando o banco em memória.', e);
@@ -530,12 +545,30 @@
       return job;
     },
 
+    /** Fotos enviadas pelos usuários. */
+    media: () => mediaMem,
+
+    addMedia(rec) {
+      mediaMem.push(rec);
+      if (idb) putAll(idb, 'media', [rec]).catch(() => { /* segue em memória */ });
+      return rec;
+    },
+
+    removeMedia(id) {
+      mediaMem = mediaMem.filter((m) => m.id !== id);
+      if (idb) {
+        try { idb.transaction('media', 'readwrite').objectStore('media').delete(id); } catch (e) { /* segue em memória */ }
+      }
+    },
+
     /** Apaga tudo e recria os dados de exemplo. */
     async reset() {
       mem = seedJobs();
+      mediaMem = [];
       reindex();
       if (idb) {
         try {
+          await clearStore(idb, 'media');
           await clearStore(idb, 'jobs');
           await putAll(idb, 'jobs', mem);
           await putAll(idb, 'meta', [{ key: 'seed', v: SEED_VERSION, at: Date.now() }]);

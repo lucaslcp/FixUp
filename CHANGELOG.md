@@ -4,6 +4,53 @@ Todas as mudanças do FixUp, da mais recente para a mais antiga.
 As versões seguem o formato `MAIOR.MENOR.CORREÇÃO`: o primeiro número muda quando o app muda de forma
 grande, o segundo quando ganha recursos novos e o terceiro quando só há correções.
 
+## 3.0.0 — 17 de novembro de 2026
+
+Versão grande: as oito ideias priorizadas pela equipe para o FixUp. Os dados salvos da versão anterior
+não são reaproveitados: o app começa com a demonstração nova.
+
+### Novo
+
+- **Tablet e computador de verdade.** A moldura de celular e o painel de apresentação saíram: o app ocupa
+  a tela toda. A partir de 768 px a navegação vira uma barra lateral (com os nomes ao lado a partir de
+  1280 px), as listas ficam em 2 colunas (e em 3 a partir de 1024 px), conversas e pedidos aparecem com a
+  lista de um lado e o detalhe do outro, e os painéis viram janelas centralizadas.
+- **Mascote Pica-Pau na interface.** Selo "Profissional Verificado FixUp", ilustração nos estados vazios,
+  carregamento com o pica-pau bicando, marca nos títulos de seção e marca-d'água nos comprovantes.
+- **Conta e segurança** (Perfil > Conta e segurança):
+  - CPF com máscara `000.000.000-00`, conferência pelos dígitos verificadores e proibição de CPF repetido;
+  - foto real do rosto obrigatória para contratar ou atender, com câmera ou galeria e o aviso
+    "Foto de rosto real obrigatória para identificação e segurança presencial no momento do serviço";
+  - a foto de cada parte aparece no cartão do atendimento, para as duas se reconhecerem na chegada;
+  - reputação dos dois lados: o cliente avalia o profissional e o profissional avalia o cliente,
+    informando se o pagamento e o combinado foram honrados;
+  - cada CPF guarda `cpfStatus`, `unpaidDisputesCount` e `reputationScore`. Com 2 ocorrências de
+    inadimplência, ou nota abaixo de 3,0 depois de 3 avaliações, contratar e atender ficam bloqueados,
+    com uma janela que explica o motivo.
+- **Perfil profissional completo.** O profissional edita resumo, anos de experiência, cursos técnicos
+  (curso, instituição, ano e carga horária), especialidades, categorias atendidas e a galeria de
+  portfólio. O cliente vê tudo em abas: Sobre, Cursos técnicos, Portfólio e Avaliações.
+- **Fotos dos serviços nas avaliações.** Cliente e profissional podem anexar fotos de antes e depois ao
+  avaliar. Cada avaliação mostra as miniaturas, e o perfil tem a seção "Fotos de Serviços Avaliados
+  (Veracidade Comprovada)", com visualização em tela cheia que traz nota, cliente, data, comentário e o
+  selo de serviço concluído pela FixUp.
+- **Deslocamento com franquia de 15 km.** A distância é a da rota mais curta entre o profissional e o
+  cliente. Até 15 km, a taxa de deslocamento é zero e o campo fica travado na proposta, com a explicação.
+  Acima disso, o profissional pode cobrar uma taxa opcional de até R$ 2,50 por km excedente.
+- **Comprovantes de pagamento e de recebimento**, com código de autenticação, data e hora, nomes e CPFs
+  mascarados, descrição do serviço e o selo do pica-pau. Aparecem no chat ("Pagamento liquidado" e
+  "Repasse liquidado"), no pedido, na carteira e no histórico de ganhos. Dá para baixar e imprimir
+  (ou salvar em PDF) no site.
+
+### Mudou
+
+- **Preço cego.** Cada transação guarda o total pago pelo cliente, o líquido do profissional e a parte da
+  plataforma, mas a tela do cliente mostra só o total e a do profissional, só o líquido. As linhas de
+  comissão e de repasse saíram de todas as telas, e o profissional passa a informar nas propostas quanto
+  quer receber.
+- A taxa de deslocamento antiga (valor fixo mais valor por km, cobrada em qualquer distância) saiu.
+- Perfis de exemplo com cursos técnicos, especialidades e fotos ilustrativas, sempre marcadas como tal.
+
 ## 2.2.0 — 14 de novembro de 2026
 
 ### Mudou

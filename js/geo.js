@@ -70,30 +70,41 @@
     const street = Math.round((a.lng + (b.lng - a.lng) * 0.15) / g.dLng) * g.dLng;
     const cross = Math.round((b.lat + (a.lat - b.lat) * 0.15) / g.dLat) * g.dLat;
     const points = [a, { lat: a.lat, lng: street }, { lat: cross, lng: street }, { lat: cross, lng: b.lng }, b].map((p) => ({ lat: p.lat, lng: p.lng }));
-    return { points, road: false };
+    return { points, road: false, km: pathKm(points) };
+  }
+
+  /** Comprimento de um trajeto (soma dos trechos). */
+  function pathKm(points) {
+    let km = 0;
+    for (let i = 1; i < points.length; i++) km += distanceKm(points[i - 1], points[i]);
+    return km;
   }
 
   const routeCache = {};
 
-  /** Rota pelas ruas entre dois pontos. Sempre resolve (usa rota de reserva se preciso). */
+  /** Rota mais curta pelas ruas entre dois pontos: o serviço de rotas devolve alternativas e fica a de
+      menor distância. Sempre resolve (usa a rota de reserva se preciso). `km` é a distância da rota. */
   function route(a, b) {
     const key = [a.lat, a.lng, b.lat, b.lng].map((n) => n.toFixed(5)).join(',');
     if (routeCache[key]) return routeCache[key];
     const base = S.config.services.routing;
     const job = !base ? Promise.resolve(fallbackRoute(a, b)) :
-      fetchJson(`${base}${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson`, 6000)
+      fetchJson(`${base}${a.lng},${a.lat};${b.lng},${b.lat}?overview=full&geometries=geojson&alternatives=true`, 6000)
         .then((j) => {
-          const r = j.routes && j.routes[0];
-          if (!r || !r.geometry || r.geometry.coordinates.length < 2) throw new Error('sem rota');
+          const r = (j.routes || []).filter((x) => x.geometry && x.geometry.coordinates.length > 1).sort((x, y) => x.distance - y.distance)[0];
+          if (!r) throw new Error('sem rota');
           const points = r.geometry.coordinates.map((c) => ({ lat: c[1], lng: c[0] }));
           points.unshift({ lat: a.lat, lng: a.lng });
           points.push({ lat: b.lat, lng: b.lng });
-          return { points, road: true };
+          return { points, road: true, km: r.distance / 1000 };
         })
         .catch(() => fallbackRoute(a, b));
     routeCache[key] = job;
     return job;
   }
+
+  /** shortestRouteDistanceKm: distância da rota mais curta entre o profissional e o cliente. */
+  const shortestRouteKm = (a, b) => route(a, b).then((r) => Math.round(r.km * 10) / 10);
 
   /** Posição ao longo da rota. `t` vai de 0 (início) a 1 (destino). */
   function along(points, t) {
@@ -112,5 +123,5 @@
     return { lat: p.lat + (q.lat - p.lat) * f, lng: p.lng + (q.lng - p.lng) * f, index: i - 1 };
   }
 
-  S.geo = { distanceKm, offset, etaMin, locate, reverse, route, along };
+  S.geo = { distanceKm, offset, etaMin, locate, reverse, route, shortestRouteKm, along };
 })(window.FixUp = window.FixUp || {});

@@ -84,19 +84,24 @@
     label: (status) => LABELS[status] || status,
 
     /** Cria o pedido e retém o pagamento.
-        draft = { proId, serviceId, note, method } para um serviço de catálogo,
-             ou { proId, proposal, method } para uma proposta combinada no chat. */
+        draft = { proId, serviceId, note, method, routeKm } para um serviço de catálogo,
+             ou { proId, proposal, method } para uma proposta combinada no chat.
+        Os valores seguem o preço cego (S.pricing): o pedido guarda os três, cada tela mostra só o seu.
+        Os nomes e CPFs das partes ficam registrados no momento do pagamento, para os comprovantes. */
     create(draft) {
       const st = S.store.state, pro = S.data.pro(draft.proId), custom = draft.proposal || null;
       const svc = custom ? null : pro.services.find((s) => s.id === draft.serviceId);
       const loc = st.location, now = Date.now();
+      const routeKm = draft.routeKm != null ? draft.routeKm : pro.km;
+      const amounts = custom ? custom.amounts : S.pricing.fromClientPrice(svc.price, S.pricing.defaultDisplacement(routeKm), routeKm);
       const order = {
         id: S.store.nextId('o'), code: 'FX-' + (1000 + Math.floor(Math.random() * 9000)),
         proId: pro.id, catId: pro.cat, serviceId: svc ? svc.id : null, custom: !!custom,
         serviceName: custom ? custom.title : svc.name, note: custom ? custom.desc : (draft.note || '').trim(),
         address: { lat: loc.lat, lng: loc.lng, label: loc.label, sub: loc.sub },
         proStart: { lat: pro.pos.lat, lng: pro.pos.lng }, km: pro.km, etaMin: pro.eta,
-        quote: custom ? S.pricing.quoteFixed(custom.price) : S.pricing.quote(svc.price, pro.km), method: draft.method,
+        amounts, method: draft.method,
+        parties: { client: { name: st.user.name, cpf: st.user.cpf }, provider: { name: pro.name, cpf: S.cpf.fromSeed('pro:' + pro.id) } },
         status: 'searching', progress: 0, createdAt: now, timeline: [{ status: 'searching', at: now }],
         payStatus: 'held', rating: null
       };
@@ -116,11 +121,11 @@
       S.db.add({
         id: order.jobId, proId: order.proId, cat: order.catId, kind: S.data.cat(order.catId).short.replace('­', ''),
         title: order.serviceName, device: '', brand: '', model: '', problem: order.note || '',
-        price: order.quote.service, min: null, doneAt: Date.now(), rating: null, review: '',
+        price: order.amounts.clientServiceAmount, min: null, doneAt: Date.now(), rating: null, review: '',
         client: user[0] + ' ' + user[user.length - 1][0] + '.', source: 'app', orderId: order.id
       });
       setStatus(order, 'completed');
-      if (S.chat) S.chat.note(order.proId, 'Serviço concluído. Pagamento liberado ao profissional.');
+      if (S.chat) S.chat.receipt(order.proId, order.id);
     },
 
     cancel(order) {
@@ -130,11 +135,14 @@
       if (S.chat) S.chat.note(order.proId, 'Pedido cancelado. O valor foi estornado.');
     },
 
-    /** A avaliação do cliente também vai para o registro do trabalho no banco. */
+    /** Avaliação dos dois lados. A do cliente vai para o registro do trabalho no banco e para a reputação
+        do CPF do profissional; em seguida o profissional (simulado) avalia o cliente. */
     rate(order, rating) {
       order.rating = rating;
       S.store.save();
       if (order.jobId) S.db.update(order.jobId, { rating: rating.stars, review: rating.comment || '' });
+      S.accounts.rate(order.parties.provider.cpf, rating.stars, true);
+      S.accounts.rateMe('client', 5, true);
     }
   };
 })(window.FixUp = window.FixUp || {});

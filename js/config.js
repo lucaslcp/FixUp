@@ -10,20 +10,31 @@
 
   S.config = {
     appName: 'FixUp',
-    version: '2.2.0',
+    version: '3.0.0',
     embedded,
 
-    /** Comissão da plataforma sobre cada serviço concluído (0.08 = 8%). Não há mensalidade. */
+    /** Parte da plataforma em cada serviço concluído (0.08 = 8%). Não há mensalidade.
+        Preço cego: esse valor nunca aparece na tela. O cliente vê só o total que paga e o
+        profissional vê só o valor líquido que recebe (veja S.pricing, abaixo). */
     commissionRate: 0.08,
 
-    /** Taxa de deslocamento cobrada do cliente: valor fixo + valor por km. */
-    travelFee: { base: 4, perKm: 1.5 },
+    /** Deslocamento: grátis até `freeKm` pela rota mais curta (o profissional arca com ele).
+        Acima disso, o profissional pode cobrar uma taxa opcional, limitada a `maxPerExcessKm`
+        por km que passar da franquia. `defaultPerExcessKm` vale para os serviços de preço fechado. */
+    travel: { freeKm: 15, maxPerExcessKm: 2.5, defaultPerExcessKm: 1.5 },
 
     /** Velocidade média urbana usada para estimar o tempo de chegada. */
     avgSpeedKmh: 22,
 
     /** Raio em que o profissional recebe solicitações. */
     coverageKm: 6,
+
+    /** Segurança por CPF: quando uma conta fica impedida de contratar ou de prestar serviços. */
+    security: {
+      minReputation: 3.0,       // nota mínima de reputação...
+      minRatings: 3,            // ...depois de pelo menos este número de avaliações
+      maxUnpaidDisputes: 2      // ocorrências de inadimplência que bloqueiam o CPF
+    },
 
     /** Local usado quando o GPS não está disponível ou a permissão é negada. */
     defaultLocation: { lat: -23.56137, lng: -46.65588, label: 'Av. Paulista, 1578', sub: 'Bela Vista, São Paulo' },
@@ -54,6 +65,19 @@
 
     /** Notas de atualização mostradas em Perfil > Novidades (o histórico completo fica no CHANGELOG.md). */
     releases: [
+      {
+        v: '3.0.0', date: '17 nov 2026', title: 'Segurança, perfil profissional, preço cego e comprovantes',
+        notes: [
+          'Tablet e computador: o app ocupa a tela toda, com barra lateral, listas em colunas e conversas e pedidos lado a lado.',
+          'Conta e segurança: CPF validado e único, foto do rosto obrigatória para contratar ou atender, reputação dos dois lados e bloqueio de CPF inadimplente.',
+          'Perfil profissional completo: resumo, cursos técnicos, especialidades, portfólio e avaliações em abas.',
+          'Fotos dos serviços nas avaliações, com galeria e visualização em tela cheia.',
+          'Deslocamento grátis até 15 km pela rota mais curta; acima disso, taxa opcional com teto por km.',
+          'Preço cego: o cliente vê só o total que paga e o profissional, só o líquido que recebe.',
+          'Comprovantes de pagamento e de recebimento com código de autenticação, no chat e no histórico financeiro.',
+          'O pica-pau da marca no selo de verificado, nos estados vazios, no carregamento e nos comprovantes.'
+        ]
+      },
       {
         v: '2.2.0', date: '14 nov 2026', title: 'Novo logo no ícone e na marca',
         notes: [
@@ -94,34 +118,59 @@
   };
 
   const round2 = (n) => Math.round(n * 100) / 100;
+  const upHalf = (n) => Math.ceil(round2(n) * 2) / 2;   // arredonda para cima, de 50 em 50 centavos
+
+  /* Valores de uma transação (o mesmo formato em pedidos, propostas e comprovantes):
+       clientTotalAmount    o que o cliente paga (é o único valor que o cliente vê)
+       providerNetAmount    o que o profissional recebe (é o único valor que o profissional vê)
+       platformFeeAmount    a parte da plataforma: fica só no registro, nunca aparece na tela
+       clientServiceAmount  a parte do total que é o serviço (total = serviço + deslocamento)
+       displacementFee      taxa de deslocamento, repassada inteira ao profissional
+       routeKm              distância da rota mais curta usada no cálculo */
+  function amounts(clientService, netService, displacementFee, routeKm) {
+    const fee = round2(displacementFee || 0);
+    const clientTotalAmount = round2(clientService + fee), providerNetAmount = round2(netService + fee);
+    return {
+      clientTotalAmount, providerNetAmount, platformFeeAmount: round2(clientTotalAmount - providerNetAmount),
+      clientServiceAmount: round2(clientService), displacementFee: fee, routeKm: routeKm == null ? null : round2(routeKm)
+    };
+  }
 
   S.pricing = {
     round2,
 
-    travel(km) {
-      const f = S.config.travelFee;
-      return Math.round((f.base + f.perKm * km) * 2) / 2;
+    /* ---------- Deslocamento (franquia de 15 km) ---------- */
+
+    /** A taxa de deslocamento está liberada para esta distância? (só acima da franquia) */
+    displacementAllowed: (km) => km > S.config.travel.freeKm,
+
+    /** Teto da taxa de deslocamento para esta distância: zero dentro da franquia. */
+    maxDisplacement(km) {
+      const t = S.config.travel;
+      return km > t.freeKm ? round2((km - t.freeKm) * t.maxPerExcessKm) : 0;
     },
 
-    /** Serviço de catálogo: valor do serviço + deslocamento, e a divisão entre profissional e plataforma. */
-    quote(servicePrice, km) {
-      const rate = S.config.commissionRate;
-      const travel = this.travel(km);
-      const total = round2(servicePrice + travel);
-      const commission = round2(total * rate);
-      return { service: servicePrice, travel, total, commission, payout: round2(total - commission), rate };
+    /** Aplica a regra: zero até a franquia; acima dela, o valor pedido limitado ao teto. */
+    clampDisplacement(km, value) {
+      return this.displacementAllowed(km) ? round2(Math.min(Math.max(0, +value || 0), this.maxDisplacement(km))) : 0;
     },
 
-    /** Proposta personalizada combinada no chat: o valor fechado já inclui o deslocamento. */
-    quoteFixed(total) {
-      const rate = S.config.commissionRate;
-      total = round2(total);
-      const commission = round2(total * rate);
-      return { service: total, travel: 0, total, commission, payout: round2(total - commission), rate, fixed: true };
+    /** Taxa padrão dos serviços de preço fechado (o profissional não escolhe na hora). */
+    defaultDisplacement(km) {
+      const t = S.config.travel;
+      return this.clampDisplacement(km, upHalf((km - t.freeKm) * t.defaultPerExcessKm));
     },
 
-    percent() {
-      return (S.config.commissionRate * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%';
+    /* ---------- Preço cego ---------- */
+
+    /** Serviço com preço de vitrine (o que o cliente vê): o profissional recebe esse valor menos a parte da plataforma. */
+    fromClientPrice(servicePrice, displacementFee, routeKm) {
+      return amounts(servicePrice, round2(servicePrice * (1 - S.config.commissionRate)), displacementFee, routeKm);
+    },
+
+    /** Proposta em que o profissional define quanto quer receber: o cliente vê o valor com a parte da plataforma embutida. */
+    fromNet(netService, displacementFee, routeKm) {
+      return amounts(upHalf(netService / (1 - S.config.commissionRate)), round2(netService), displacementFee, routeKm);
     }
   };
 })(window.FixUp = window.FixUp || {});

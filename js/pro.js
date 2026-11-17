@@ -1,5 +1,7 @@
 /* FixUp — modo profissional: ficar online, receber solicitações próximas, atender
-   (inclusive propostas aceitas no chat) e acompanhar ganhos, com a comissão sempre visível. */
+   (inclusive propostas aceitas no chat) e acompanhar ganhos.
+   Preço cego: o profissional vê só o valor líquido que recebe (providerNetAmount). O total pago pelo
+   cliente e a parte da plataforma ficam nos registros, mas nunca aparecem nesta tela. */
 (function (S) {
   'use strict';
 
@@ -7,7 +9,6 @@
   const A = S.actions, screens = S.screens;
   const st = () => S.store.state;
   const pr = () => st().pro;
-  const pct = () => S.pricing.percent();
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
 
   const CLIENTS = ['Beatriz Almeida', 'Lucas Ferreira', 'Sofia Carvalho', 'Henrique Dias', 'Marta Oliveira', 'Caio Ribeiro', 'Jéssica Antunes'];
@@ -22,7 +23,7 @@
   function todayStats() {
     const d = new Date(), start = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     const jobs = pr().jobs.filter((j) => j.at >= start);
-    return { count: jobs.length, net: jobs.reduce((s, j) => s + j.net, 0) };
+    return { count: jobs.length, net: jobs.reduce((s, j) => s + j.providerNetAmount, 0) };
   }
 
   const newJob = (o) => Object.assign({
@@ -34,17 +35,28 @@
   function makeRequest() {
     const svc = pick(S.data.cat(pr().cat).services);
     const dist = Math.round((0.8 + Math.random() * 2.8) * 10) / 10;
-    return newJob({ client: pick(CLIENTS), address: pick(STREETS), service: svc.name, km: dist, quote: S.pricing.quote(svc.price, dist) });
+    return newJob({ client: pick(CLIENTS), address: pick(STREETS), service: svc.name, km: dist, amounts: S.pricing.fromClientPrice(svc.price, S.pricing.defaultDisplacement(dist), dist) });
   }
 
   /* ---------- Blocos da tela ---------- */
 
-  const earnHtml = (q) => `
+  /* Só o valor líquido (e a taxa de deslocamento, quando houver, que é inteira do profissional). */
+  const earnHtml = (a) => `
     <div class="earn">
-      <div><span>Valor do serviço</span><b>${money(q.total)}</b></div>
-      <div><span>Comissão FixUp (${pct()})</span><b>− ${money(q.commission)}</b></div>
-      <div class="earn-total"><span>Você recebe</span><b>${money(q.payout)}</b></div>
+      ${a.displacementFee ? `<div><span>Deslocamento (${km(a.routeKm)})</span><b>${money(a.displacementFee)}</b></div>` : `<div><span>Deslocamento${a.routeKm != null ? ' (' + km(a.routeKm) + ')' : ''}</span><b>grátis até ${S.config.travel.freeKm} km</b></div>`}
+      <div class="earn-total"><span>Você recebe</span><b>${money(a.providerNetAmount)}</b></div>
     </div>`;
+
+  /* Identificação presencial: as duas partes se reconhecem pela foto do rosto. */
+  function idCard(j) {
+    const c = S.accounts.client(j.client), me = pr();
+    return `
+      <div class="id-card">
+        ${ui.face({ name: j.client, hue: c ? 230 + (c.cpf.charCodeAt(3) % 30) : 240 }, 64, 'big')}
+        <div class="id-main"><small>Confira o rosto na chegada</small><strong>${esc(j.client)}</strong><span>CPF ${c ? S.cpf.hidden(c.cpf) : 'não informado'} · reputação ${c ? S.accounts.score(c.reputationScore) : '—'}</span></div>
+        <div class="id-me">${ui.face(me, 36)}<small>Você</small></div>
+      </div>`;
+  }
 
   const jobLine = (j) => `<p class="req-client"><span>${icon('user')}${esc(j.client)}</span><span>${icon('map-pin')}${esc(j.address)}</span></p>`;
 
@@ -65,8 +77,9 @@
           <div class="req-head"><span class="tag ok">${j.fromChat ? 'Proposta aceita' : 'Em atendimento'}</span><span class="req-dist" id="job-status">${esc(s.label)}</span></div>
           <h3>${esc(j.service)}</h3>
           ${jobLine(j)}
+          ${idCard(j)}
           <ol class="steps">${STEPS.map((t, i) => `<li class="${i < s.step ? 'done' : i === s.step ? 'now' : ''}"><span class="bullet">${i < s.step ? icon('check') : ''}</span><span>${t}</span></li>`).join('')}</ol>
-          <div class="earn-inline">${icon('shield-check')}<span>Você recebe <strong>${money(j.quote.payout)}</strong> · pagamento garantido pela plataforma</span></div>
+          <div class="earn-inline">${icon('shield-check')}<span>Você recebe <strong>${money(j.amounts.providerNetAmount)}</strong> · pagamento garantido pela plataforma</span></div>
           <button class="btn btn-primary btn-block btn-lg" data-action="pro-advance">${icon(s.ic)}${s.cta}</button>
           ${rt.queue.length ? `<p class="hint">${rt.queue.length === 1 ? 'Há mais 1 atendimento na fila' : `Há mais ${rt.queue.length} atendimentos na fila`}, de propostas aceitas no chat.</p>` : ''}
         </div>`;
@@ -79,7 +92,7 @@
           <div class="req-head"><span class="tag">Nova solicitação</span><span class="req-dist">${icon('navigation')}${km(j.km)} · ${j.eta} min</span></div>
           <h3>${esc(j.service)}</h3>
           ${jobLine(j)}
-          ${earnHtml(j.quote)}
+          ${earnHtml(j.amounts)}
           <div class="row-2">
             <button class="btn btn-soft" data-action="pro-decline">Recusar</button>
             <button class="btn btn-primary" data-action="pro-accept">Aceitar</button>
@@ -202,34 +215,77 @@
     paint();
   }
 
-  /* Conclusão: o valor entra no saldo e o trabalho entra no banco de trabalhos realizados. */
+  /* Conclusão: o valor líquido entra no saldo, o trabalho entra no banco de trabalhos realizados,
+     o repasse ganha comprovante e o profissional avalia o cliente (nota, adimplência e fotos do serviço). */
   function completeJob() {
-    const job = rt.active, p = pr(), q = job.quote, now = Date.now(), who = job.client.split(' ');
-    p.jobs.unshift({ id: S.store.nextId('j'), client: job.client, service: job.service, gross: q.total, commission: q.commission, net: q.payout, at: now });
-    p.balance = S.pricing.round2(p.balance + q.payout);
+    const job = rt.active, p = pr(), a = job.amounts, now = Date.now(), who = job.client.split(' ');
+    const entry = Object.assign({ id: S.store.nextId('j'), client: job.client, service: job.service, at: now, chatId: job.chatId || null }, a);
+    p.jobs.unshift(entry);
+    p.balance = S.pricing.round2(p.balance + a.providerNetAmount);
     S.store.save();
+    const jobId = 'me-' + job.id;
     S.db.add({
-      id: 'me-' + job.id, proId: 'me', cat: p.cat, kind: 'Atendimentos recentes', title: job.service, device: '', brand: '', model: '', problem: '',
-      price: q.total, min: null, doneAt: now, rating: 5, review: '', client: who[0] + ' ' + who[who.length - 1][0] + '.', source: 'app'
+      id: jobId, proId: 'me', cat: p.cat, kind: 'Atendimentos recentes', title: job.service, device: '', brand: '', model: '', problem: '',
+      price: a.clientServiceAmount, min: null, doneAt: now, rating: 5, review: '', client: who[0] + ' ' + who[who.length - 1][0] + '.', source: 'app'
     });
+    S.accounts.rateMe('provider', 5, true);   // o cliente (simulado) avalia o profissional
+    if (job.chatId) S.chat.proReceipt(job.chatId, entry);
     rt.active = rt.queue.shift() || null;
     if (rt.active) rt.active.status = 'accepted';
     paint();
+    rateClient(job, entry, jobId);
+    if (!rt.active) schedule(9000);
+  }
+
+  /* O profissional avalia o cliente: nota, se o combinado foi honrado e fotos do serviço (antes e depois). */
+  function rateClient(job, entry, jobId) {
+    const c = S.accounts.client(job.client);
+    let stars = 5, paidOk = true, photos = [];
+    const drawPhotos = () => {
+      const box = document.getElementById('rc-photos');
+      if (box) box.innerHTML = photos.map((src, i) => `<span class="up-thumb"><img src="${src}" alt="Foto ${i + 1} do serviço"><button data-action="rc-photo-del" data-arg="${i}" aria-label="Remover foto">${icon('x')}</button></span>`).join('');
+      ui.refreshIcons();
+    };
     ui.sheet.open(`
-      <div class="dialog">
+      <div class="rate">
         <span class="match-ok">${icon('circle-check')}</span>
         <h3>Serviço concluído</h3>
-        <p class="muted">${esc(job.service)} · ${esc(job.client)}</p>
-        ${earnHtml(q)}
-        <p class="hint">O valor já está no seu saldo e o serviço entrou no seu histórico de trabalhos.</p>
-        <button class="btn btn-primary btn-block" data-action="sheet-close">Continuar</button>
+        <p class="muted">${esc(job.service)}</p>
+        ${earnHtml(job.amounts)}
+        <div class="rate-pro">${ui.face({ name: job.client }, 52)}<strong>Como foi atender ${esc(ui.first(job.client))}?</strong></div>
+        <div class="rate-stars" id="rc-stars">${[1, 2, 3, 4, 5].map((n) => `<button class="on" data-action="rc-star" data-arg="${n}" aria-label="${n} estrelas">${icon('star')}</button>`).join('')}</div>
+        <div class="seg paid-seg" id="rc-paid" role="radiogroup" aria-label="O cliente honrou o combinado?">
+          <button class="active" data-action="rc-paid" data-arg="1">Pagamento e combinado honrados</button>
+          <button data-action="rc-paid" data-arg="0">Houve calote ou contestação</button>
+        </div>
+        <div class="up-box">
+          <div class="up-head"><strong>Fotos do serviço</strong><small>Antes e depois. Elas aparecem no seu perfil, junto com a avaliação.</small></div>
+          <div class="up-list" id="rc-photos"></div>
+          <button class="btn btn-soft btn-sm" data-action="rc-photo-add">${icon('camera')}Adicionar fotos</button>
+        </div>
+        <button class="btn btn-primary btn-block btn-lg" data-action="rc-send">Enviar avaliação</button>
+        <button class="btn btn-ghost btn-block btn-sm" data-action="rc-receipt">${icon('file-check-2')}Ver comprovante de recebimento</button>
       </div>`);
-    if (!rt.active) schedule(7000);
+    A['rc-star'] = (el) => { stars = +el.dataset.arg; document.querySelectorAll('#rc-stars button').forEach((b, i) => b.classList.toggle('on', i < stars)); };
+    A['rc-paid'] = (el) => { paidOk = el.dataset.arg === '1'; document.querySelectorAll('#rc-paid button').forEach((b) => b.classList.toggle('active', b === el)); };
+    A['rc-photo-add'] = async () => { photos = photos.concat(await S.media.pick({ multiple: true, limit: 6 - photos.length })).slice(0, 6); drawPhotos(); };
+    A['rc-photo-del'] = (el) => { photos.splice(+el.dataset.arg, 1); drawPhotos(); };
+    A['rc-receipt'] = () => S.receipts.open(S.receipts.fromLedger(entry));
+    A['rc-send'] = () => {
+      if (c) {
+        const after = S.accounts.rate(c.cpf, stars, paidOk);
+        if (!paidOk) ui.toast(after && after.cpfStatus === 'blocked_debtor' ? 'Ocorrência registrada. O CPF do cliente foi bloqueado para novas contratações.' : 'Ocorrência de inadimplência registrada no CPF do cliente.', 'info');
+      }
+      if (photos.length) S.media.save(photos, { owner: 'me', kind: 'job', jobId, by: 'provider' });
+      ui.sheet.close();
+      if (paidOk) ui.toast('Avaliação registrada. Obrigado!', 'ok');
+    };
   }
 
   A['pro-toggle'] = () => {
     const p = pr();
     if (p.online && rt.active) return ui.toast('Conclua o atendimento atual antes de ficar offline.', 'info');
+    if (!p.online && !S.guard.allow('serve')) return;
     p.online = !p.online;
     S.store.save();
     clearTimers();
@@ -249,6 +305,7 @@
 
   A['pro-accept'] = () => {
     if (!rt.incoming) return;
+    if (!S.guard.allow('serve') || !S.guard.counterpart(S.accounts.client(rt.incoming.client))) return;
     clearTimeout(rt.expire);
     rt.active = rt.incoming;
     rt.incoming = null;
@@ -276,13 +333,13 @@
       </div>
       <p class="muted">É este histórico que os clientes veem no seu perfil. A busca da FixUp também usa esses registros para indicar você a quem tem um problema parecido.</p>
       <div class="kinds">${S.db.kinds('me').map((k) => `<span>${esc(k.label)}<b>${k.count}</b></span>`).join('')}</div>
-      <div class="jobs">${jobs.slice(0, 40).map((j) => ui.jobCard(j)).join('')}</div>`);
+      <div class="jobs">${jobs.slice(0, 40).map((j) => ui.jobCard(j, null, { provider: true })).join('')}</div>`);
   };
 
   S.proSim = {
     /** Uma proposta enviada pelo chat foi aceita e paga: vira um atendimento (ou entra na fila). */
     fromProposal(o) {
-      const job = newJob({ client: o.client, address: o.address, service: o.service, km: o.km, quote: S.pricing.quoteFixed(o.price), fromChat: true });
+      const job = newJob({ client: o.client, address: o.address, service: o.service, km: o.km, amounts: o.amounts, chatId: o.chatId, fromChat: true });
       if (rt.active) { rt.queue.push(job); paint(); return; }
       clearTimeout(rt.timer);
       clearTimeout(rt.expire);
@@ -315,7 +372,7 @@
         <header class="hero hero-pro">
           <div class="hero-top">
             <div class="pro-id">
-              ${avatar({ name: p.name, hue: 252 }, 44)}
+              ${ui.face(p, 44)}
               <span><strong>${esc(p.name)}</strong><small>${esc(S.data.cat(p.cat).name)} · modo profissional</small></span>
             </div>
             <button class="switch${p.online ? ' on' : ''}" id="pro-switch" data-action="pro-toggle" role="switch" aria-checked="${p.online}">
@@ -335,7 +392,7 @@
         <section class="section" id="pro-state">${stateHtml()}</section>
 
         <section class="section">
-          <div class="fee-note">${icon('percent')}<span>Sem mensalidade. Você só paga <strong>${pct()}</strong> de comissão sobre os serviços que concluir.</span></div>
+          <div class="fee-note">${icon('wallet')}<span>Sem mensalidade. Os valores que você vê são sempre o <strong>líquido</strong> que entra no seu saldo.</span></div>
         </section>
         <div class="spacer"></div>`;
     },
@@ -367,9 +424,7 @@
       days.push({
         label: new Date(start).toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').slice(0, 3),
         today: i === 0,
-        gross: jobs.reduce((s, j) => s + j.gross, 0),
-        commission: jobs.reduce((s, j) => s + j.commission, 0),
-        net: jobs.reduce((s, j) => s + j.net, 0)
+        net: jobs.reduce((s, j) => s + j.providerNetAmount, 0)
       });
     }
     return days;
@@ -381,14 +436,14 @@
     render() {
       const p = pr(), week = weekData();
       const max = Math.max.apply(null, week.map((x) => x.net).concat(1));
-      const sum = week.reduce((a, x) => ({ gross: a.gross + x.gross, commission: a.commission + x.commission, net: a.net + x.net }), { gross: 0, commission: 0, net: 0 });
+      const sum = { net: week.reduce((a, x) => a + x.net, 0), count: p.jobs.filter((j) => j.at >= Date.now() - 7 * 864e5).length };
       const entries = p.jobs.map((j) => ({ at: j.at, job: j })).concat(p.withdrawals.map((w) => ({ at: w.at, wd: w }))).sort((a, b) => b.at - a.at);
       const entryRow = (e) => (e.job ? `
-        <div class="tx">
+        <button class="tx tx-btn" data-action="rcpt-ledger" data-arg="${esc(e.job.id)}" title="Ver comprovante de recebimento">
           <span class="row-ic in">${icon('arrow-down-left')}</span>
-          <span class="row-main"><strong>${esc(e.job.service)}</strong><small>${ui.day(e.at)} · ${esc(e.job.client)} · comissão ${money(e.job.commission)}</small></span>
-          <b class="pos">+ ${money(e.job.net)}</b>
-        </div>` : `
+          <span class="row-main"><strong>${esc(e.job.service)}</strong><small>${ui.day(e.at)} · ${esc(e.job.client)} · comprovante</small></span>
+          <b class="pos">+ ${money(e.job.providerNetAmount)}</b>
+        </button>` : `
         <div class="tx">
           <span class="row-ic">${icon('landmark')}</span>
           <span class="row-main"><strong>Saque via Pix</strong><small>${ui.day(e.at)}, ${ui.time(e.at)}</small></span>
@@ -409,19 +464,18 @@
           <div class="card">
             <div class="bars">${week.map((x) => `<div class="bar${x.today ? ' today' : ''}"><span style="height:${Math.round(4 + (x.net / max) * 72)}px"></span><small>${esc(x.label)}</small></div>`).join('')}</div>
             <dl class="bill">
-              <div><dt>Valor dos serviços</dt><dd>${money(sum.gross)}</dd></div>
-              <div><dt>Comissão FixUp (${pct()})</dt><dd>− ${money(sum.commission)}</dd></div>
+              <div><dt>Serviços concluídos</dt><dd>${sum.count}</dd></div>
               <div class="bill-total"><dt>Você recebeu</dt><dd>${money(sum.net)}</dd></div>
             </dl>
           </div>
         </section>
 
         <section class="section">
-          <div class="fee-note">${icon('percent')}<span>Sem mensalidade e sem taxa de saque. A FixUp cobra apenas <strong>${pct()}</strong> por serviço concluído.</span></div>
+          <div class="fee-note">${icon('wallet')}<span>Sem mensalidade e sem taxa de saque. Cada valor aqui já é o líquido que você recebe. Toque em um serviço para ver o comprovante de recebimento.</span></div>
         </section>
 
         <section class="section">
-          <h3 class="h3">Extrato</h3>
+          <h3 class="h3">Histórico financeiro</h3>
           <div class="card flush">${entries.length ? entries.map(entryRow).join('') : '<p class="muted pad">Nenhum serviço concluído ainda.</p>'}</div>
         </section>
         <div class="spacer"></div>`;

@@ -7,8 +7,8 @@
   const ROUTES = [
     ['/home', 'home'], ['/search', 'search'], ['/p/:id', 'proProfile'], ['/checkout/:pro/:service', 'checkout'],
     ['/track/:id', 'track'], ['/orders', 'orders'], ['/order/:id', 'receipt'], ['/wallet', 'wallet'], ['/profile', 'profile'],
-    ['/chats', 'chats'], ['/chat/:id', 'chat'],
-    ['/pro', 'proHome'], ['/pro/earnings', 'proEarnings'], ['/pro/chats', 'proChats'], ['/pro/chat/:id', 'proChat']
+    ['/chats', 'chats'], ['/chat/:id', 'chat'], ['/account', 'account'],
+    ['/pro', 'proHome'], ['/pro/earnings', 'proEarnings'], ['/pro/chats', 'proChats'], ['/pro/chat/:id', 'proChat'], ['/pro/profile', 'proEdit'], ['/pro/profile/preview', 'proPreview']
   ].map(([pattern, name]) => {
     const keys = [];
     const re = new RegExp('^' + pattern.replace(/:([a-z]+)/g, (m, k) => { keys.push(k); return '([^/]+)'; }) + '$');
@@ -23,7 +23,7 @@
   /* Telas internas: qual item da navegação fica destacado na barra lateral. */
   const PARENT = {
     proProfile: 'search', checkout: 'search', chat: 'chats', track: 'orders', receipt: 'orders', wallet: 'profile', account: 'profile',
-    proChat: 'pchats', proEdit: 'profile'
+    proChat: 'pchats', proEdit: 'profile', proPreview: 'profile'
   };
   const THEME_ICON = { auto: 'sun-moon', light: 'sun', dark: 'moon' };
   const THEME_NAME = { auto: 'automático', light: 'claro', dark: 'escuro' };

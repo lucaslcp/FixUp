@@ -155,6 +155,68 @@
   const catById = {};
   categories.forEach((c) => { catById[c.id] = c; });
 
+  /* =====================================================================
+     Perfil profissional: formação, cursos técnicos e especialidades
+     Os perfis de exemplo recebem uma seleção destes cursos (ano de conclusão antes da entrada na FixUp).
+     [curso, instituição, carga horária]
+     ===================================================================== */
+  const COURSES = {
+    eletricista: [['NR-10 · Segurança em instalações e serviços em eletricidade', 'SENAI', '40 h'], ['Eletricista instalador predial de baixa tensão', 'SENAI', '200 h'], ['Automação residencial', 'SENAC', '60 h'], ['NR-35 · Trabalho em altura', 'SENAI', '8 h'], ['Técnico em eletrotécnica', 'IFES', '1.200 h']],
+    encanador: [['Instalador hidráulico predial', 'SENAI', '160 h'], ['Detecção de vazamentos não destrutiva', 'SENAI', '24 h'], ['Instalação de aquecedores a gás', 'SENAI', '40 h'], ['NR-35 · Trabalho em altura', 'SENAI', '8 h']],
+    eletrodomesticos: [['Mecânico de refrigeração e climatização', 'SENAI', '240 h'], ['Técnico em eletrônica', 'IFES', '1.200 h'], ['Manutenção de lavadoras automáticas', 'SENAI', '80 h'], ['Eletrônica de placas de linha branca', 'SENAC', '60 h'], ['NR-10 · Segurança em eletricidade', 'SENAI', '40 h']],
+    limpeza: [['Limpeza e conservação profissional', 'SENAC', '80 h'], ['Higienização de estofados', 'SENAC', '20 h'], ['Organização de ambientes', 'SENAC', '30 h']],
+    montador: [['Montador de móveis', 'SENAI', '120 h'], ['Marcenaria básica', 'SENAI', '160 h'], ['NR-35 · Trabalho em altura', 'SENAI', '8 h']],
+    climatizacao: [['Instalação e manutenção de ar-condicionado split', 'SENAI', '160 h'], ['Mecânico de refrigeração e climatização', 'SENAI', '240 h'], ['Manuseio de fluidos refrigerantes', 'SENAI', '16 h'], ['NR-10 · Segurança em eletricidade', 'SENAI', '40 h']],
+    eletronicos: [['Técnico em eletrônica', 'IFES', '1.200 h'], ['Manutenção de smartphones', 'SENAC', '80 h'], ['Reparo de placas e microssoldagem', 'SENAI', '60 h']],
+    informatica: [['Técnico em informática', 'IFES', '1.200 h'], ['Montagem e manutenção de computadores', 'SENAC', '120 h'], ['Redes de computadores', 'SENAI', '80 h']],
+    pintor: [['Pintor de obras', 'SENAI', '160 h'], ['Texturas e efeitos decorativos', 'SENAI', '40 h'], ['NR-35 · Trabalho em altura', 'SENAI', '8 h']],
+    chaveiro: [['Chaveiro profissional', 'SENAI', '80 h'], ['Fechaduras eletrônicas e digitais', 'SENAI', '24 h']],
+    jardinagem: [['Jardinagem e paisagismo', 'SENAR', '80 h'], ['Poda de árvores urbanas', 'SENAR', '24 h'], ['Hortas urbanas', 'SENAR', '16 h']],
+    frete: [['Direção defensiva', 'SEST SENAT', '20 h'], ['Movimentação e transporte de cargas', 'SEST SENAT', '40 h']],
+    beleza: [['Cabeleireiro', 'SENAC', '400 h'], ['Maquiagem profissional', 'SENAC', '80 h'], ['Biossegurança em serviços de beleza', 'SENAC', '20 h']],
+    reformas: [['Pedreiro de alvenaria', 'SENAI', '200 h'], ['Assentador de revestimentos', 'SENAI', '120 h'], ['Montador de drywall', 'SENAI', '80 h'], ['NR-35 · Trabalho em altura', 'SENAI', '8 h']]
+  };
+
+  /* Especialidades que completam as mais frequentes do histórico de cada profissional. */
+  const SKILLS = {
+    eletricista: ['Quadros de distribuição', 'Instalações com NR-10', 'Atendimento de emergência'], encanador: ['Caça-vazamento', 'Desentupimento', 'Aquecedores'],
+    eletrodomesticos: ['Placas eletrônicas', 'Refrigeração', 'Linha branca multimarcas'], limpeza: ['Pós-obra', 'Produtos próprios', 'Passadoria'],
+    montador: ['Móveis planejados', 'Fixação em drywall', 'Desmontagem para mudança'], climatizacao: ['Bomba de vácuo', 'Higienização', 'Inverter'],
+    eletronicos: ['Placas e microssoldagem', 'Telas e baterias', 'Consoles'], informatica: ['Recuperação de dados', 'Redes Wi-Fi', 'Home office'],
+    pintor: ['Acabamento fino', 'Texturas', 'Tratamento de mofo'], chaveiro: ['Abertura sem danos', 'Fechaduras digitais', 'Chaves codificadas'],
+    jardinagem: ['Paisagismo', 'Hortas', 'Poda'], frete: ['Van fechada', 'Pequenas mudanças', 'Montagem no destino'],
+    beleza: ['Atendimento em domicílio', 'Noivas e festas', 'Material esterilizado'], reformas: ['Pequenos reparos', 'Revestimentos', 'Drywall']
+  };
+
+  const pickCourses = (cat, seed, since, count) => {
+    const list = COURSES[cat] || [];
+    return list.filter((_, i) => (i + seed) % 3 !== 2).slice(0, count)
+      .map((c, i) => ({ name: c[0], institution: c[1], hours: c[2], year: since - 1 - i * 2 - (seed % 3) }));
+  };
+
+  /** Perfil profissional de um perfil de exemplo (anos de experiência, cursos e especialidades). */
+  function profileOf(p, i) {
+    return {
+      years: (2026 - p.since) + 2 + (i % 5),
+      courses: pickCourses(p.cat, i, p.since, 2 + (i % 2)),
+      specialties: SKILLS[p.cat] ? SKILLS[p.cat].slice(0, 2 + (i % 2)) : [],
+      cats: [p.cat]
+    };
+  }
+
+  /** Perfil profissional inicial do usuário no modo profissional (pode ser editado em Perfil > Perfil profissional). */
+  const myProfile = () => ({
+    bio: 'Eletricista residencial há 9 anos. Faço instalações, trocas de disjuntor, chuveiros e iluminação, sempre com material de qualidade, teste no final e garantia de 90 dias.',
+    years: 9,
+    courses: [
+      { name: 'NR-10 · Segurança em instalações e serviços em eletricidade', institution: 'SENAI', hours: '40 h', year: 2017 },
+      { name: 'Eletricista instalador predial de baixa tensão', institution: 'SENAI', hours: '200 h', year: 2016 },
+      { name: 'NR-35 · Trabalho em altura', institution: 'SENAI', hours: '8 h', year: 2019 }
+    ],
+    specialties: ['Chuveiros e tomadas 20A', 'Quadros de distribuição', 'Iluminação de LED'],
+    cats: ['eletricista']
+  });
+
   /** Monta a lista de profissionais com posição, distância, tempo, preços e números vindos do banco. */
   function build(loc) {
     return pros.map((p, i) => {
@@ -169,7 +231,9 @@
         services,
         fromPrice: Math.min.apply(null, services.map((s) => s.price)),
         availableNow: p.wait === 0,
-        availLabel: p.wait === 0 ? 'Disponível agora' : `Livre em ${p.wait} min`
+        availLabel: p.wait === 0 ? 'Disponível agora' : `Livre em ${p.wait} min`,
+        profile: profileOf(p, i),
+        excessPerKm: S.config.travel.defaultPerExcessKm
       });
     }).sort((a, b) => a.km - b.km);
   }
@@ -188,6 +252,8 @@
     pros,
     me,
     myRecent,
+    myProfile,
+    courses: COURSES,
     build,
     near,
     /** Chamado quando o banco muda (novo trabalho ou avaliação): os números dos profissionais são recalculados. */

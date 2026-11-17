@@ -7,7 +7,6 @@
   const A = S.actions, I = S.inputs, screens = S.screens;
   const st = () => S.store.state;
   const catOf = (p) => S.data.cat(p.cat);
-  const pct = () => S.pricing.percent();
   const plain = (s) => s.replace('­', '');
   const qs = (o) => {
     const p = new URLSearchParams();
@@ -67,12 +66,15 @@
       </button>`;
   }
 
-  const bill = (q, kmv) => `
+  /* Resumo do que o cliente paga. Preço cego: sem taxa de plataforma nem repasse, só serviço,
+     deslocamento (grátis até 15 km pela rota mais curta) e total. */
+  const bill = (a) => `
     <dl class="bill">
-      <div><dt>${q.fixed ? 'Proposta combinada' : 'Serviço'}</dt><dd>${money(q.service)}</dd></div>
-      <div><dt>Deslocamento <small>(${km(kmv)})</small></dt><dd>${q.fixed ? 'incluso' : money(q.travel)}</dd></div>
-      <div class="bill-total"><dt>Total</dt><dd>${money(q.total)}</dd></div>
-    </dl>`;
+      <div><dt>Serviço</dt><dd>${money(a.clientServiceAmount)}</dd></div>
+      <div><dt>Deslocamento${a.routeKm != null ? ` <small>(${km(a.routeKm)} pela rota)</small>` : ''}</dt><dd>${a.displacementFee ? money(a.displacementFee) : 'Grátis'}</dd></div>
+      <div class="bill-total"><dt>Total</dt><dd>${money(a.clientTotalAmount)}</dd></div>
+    </dl>
+    ${a.displacementFee ? '' : `<p class="bill-note">${icon('route')}Deslocamento grátis até ${S.config.travel.freeKm} km.</p>`}`;
 
   const methodRow = (m, selected, action) => `
     <button class="method${m.id === selected ? ' selected' : ''}" data-action="${action}" data-arg="${m.id}">
@@ -130,7 +132,7 @@
   };
 
   /* Blocos usados também por outras telas (js/chat.js). */
-  S.blocks = { backBar, missing, proCard, bill, methodRow, pix: openPix };
+  S.blocks = { backBar, missing, proCard, bill, methodRow, pix: openPix, proPublic: (pro, o) => proPublic(pro, o), showTab: (root) => showTab(root) };
 
   /* =====================================================================
      Início
@@ -453,42 +455,123 @@
      Perfil do profissional
      ===================================================================== */
 
+  /* Avaliação com as fotos do serviço avaliado (prova de veracidade). */
   const reviewCard = (j) => `
     <article class="review">
       <div class="review-top"><strong>${esc(j.client)}</strong><span class="stars">${ui.stars(j.rating)}</span></div>
-      <p>${esc(j.review)}</p>
-      <small>${ui.ago(j.doneAt)} · ${esc(j.title)}</small>
+      ${j.review ? `<p>${esc(j.review)}</p>` : ''}
+      ${S.media.strip(S.media.ofJob(j), 4, 'sm')}
+      <small class="review-foot"><span class="ok-mark">${icon('badge-check')}Serviço concluído via FixUp</span>${ui.ago(j.doneAt)} · ${esc(j.title)}</small>
     </article>`;
+
+  const PTABS = [['sobre', 'Sobre', 'user-round'], ['cursos', 'Cursos técnicos', 'graduation-cap'], ['portfolio', 'Portfólio', 'images'], ['avaliacoes', 'Avaliações', 'star']];
+
+  /** Perfil profissional público, em abas (Sobre, Cursos técnicos, Portfólio, Avaliações).
+      Usado pelo cliente (/p/:id) e pela pré-visualização do próprio profissional (/pro/profile/preview). */
+  function proPublic(pro, o) {
+    const tab = PTABS.some((t) => t[0] === o.tab) ? o.tab : 'sobre';
+    const prof = pro.profile || { years: 0, courses: [], specialties: [], cats: [pro.cat] };
+    const jobs = S.db.byPro(pro.id), reviews = jobs.filter((j) => j.rating && (j.review || S.media.ofJob(j).length));
+    const avgShown = jobs.filter((j) => j.rating).length;
+    const kinds = S.db.kinds(pro.id);
+    let body = '';
+    if (tab === 'sobre') {
+      body = `
+        <section class="section">
+          <h3 class="h3">Resumo profissional</h3>
+          <p class="body">${esc(pro.bio || prof.bio || '')}</p>
+          <div class="facts">
+            <div>${icon('briefcase')}<strong>${prof.years} ${prof.years === 1 ? 'ano' : 'anos'}</strong><small>de experiência</small></div>
+            <div>${icon('circle-check')}<strong>${jobs.length}</strong><small>serviços concluídos na FixUp</small></div>
+            <div>${icon('graduation-cap')}<strong>${prof.courses.length}</strong><small>${prof.courses.length === 1 ? 'curso técnico' : 'cursos técnicos'}</small></div>
+          </div>
+        </section>
+        <section class="section">
+          <h3 class="h3">Especialidades</h3>
+          <div class="tags">${prof.specialties.concat(kinds.slice(0, 4).map((k) => k.label)).filter((t, i, a) => a.indexOf(t) === i).map((t) => `<span>${esc(t)}</span>`).join('')}</div>
+          <div class="cats-served">${prof.cats.map((c) => S.data.cat(c)).filter(Boolean).map((c) => `<span>${icon(c.icon)}${esc(c.name)}</span>`).join('')}</div>
+        </section>`
+        + (o.services || '')
+        + `<section class="section">
+          <div class="section-head">${ui.heading('Serviços realizados')}<span class="muted sm">${jobs.length} no histórico</span></div>
+          <div class="kinds">${kinds.slice(0, 6).map((k) => `<span>${esc(k.label)}<b>${k.count}</b></span>`).join('')}</div>
+          <div class="jobs">${jobs.slice(0, 3).map((j) => ui.jobCard(j, null, { provider: o.preview })).join('')}</div>
+          ${jobs.length > 3 ? `<button class="btn btn-soft btn-block" data-action="open-jobs" data-arg="${pro.id}">Ver os ${jobs.length} serviços</button>` : ''}
+        </section>`;
+    } else if (tab === 'cursos') {
+      body = `
+        <section class="section">
+          <h3 class="h3">Formação e cursos técnicos</h3>
+          ${prof.courses.length ? `<div class="courses">${prof.courses.slice().sort((a, b) => b.year - a.year).map((c) => `
+            <article class="course">
+              <span class="row-ic">${icon('graduation-cap')}</span>
+              <span class="row-main"><strong class="wrap">${esc(c.name)}</strong><small>${esc(c.institution)}${c.year ? ' · ' + c.year : ''}${c.hours ? ' · ' + esc(c.hours) : ''}</small></span>
+            </article>`).join('')}</div>` : `<div class="empty small">${ui.mascot('empty', 72)}<p class="muted">Nenhum curso informado ainda.</p></div>`}
+          <p class="hint left">Cursos informados pelo profissional. A FixUp pede o certificado na verificação do cadastro.</p>
+        </section>`;
+    } else if (tab === 'portfolio') {
+      const gallery = S.media.portfolio(pro.id);
+      body = `
+        <section class="section">
+          <div class="section-head">${ui.heading('Galeria de trabalhos')}<span class="muted sm">${gallery.length} ${gallery.length === 1 ? 'foto' : 'fotos'}</span></div>
+          ${gallery.length ? S.media.strip(gallery, 12, 'grid') : `<div class="empty small">${ui.mascot('empty', 72)}<p class="muted">Nenhuma foto no portfólio ainda.</p></div>`}
+        </section>
+        <section class="section">
+          <div class="section-head">${ui.heading('Serviços realizados')}<span class="muted sm">${jobs.length} no histórico</span></div>
+          <div class="jobs">${jobs.slice(0, 6).map((j) => ui.jobCard(j, null, { provider: o.preview })).join('')}</div>
+          ${jobs.length > 6 ? `<button class="btn btn-soft btn-block" data-action="open-jobs" data-arg="${pro.id}">Ver os ${jobs.length} serviços</button>` : ''}
+        </section>`;
+    } else {
+      const shots = S.media.reviewed(pro.id, 24);
+      body = `
+        <section class="section">
+          <div class="section-head">${ui.heading('Fotos de Serviços Avaliados (Veracidade Comprovada)')}</div>
+          <p class="muted sm">Cada foto pertence a um serviço contratado e concluído pela FixUp. Toque para ver a avaliação.</p>
+          ${shots.length ? S.media.strip(shots, 12, 'grid') : `<div class="empty small">${ui.mascot('empty', 72)}<p class="muted">Ainda não há fotos de serviços avaliados.</p></div>`}
+        </section>
+        <section class="section">
+          <div class="section-head">${ui.heading('Avaliações verificadas')}<span class="muted sm">${ui.rating(pro.rating)} de média · ${avgShown} ${avgShown === 1 ? 'avaliação' : 'avaliações'}</span></div>
+          ${reviews.length ? `<div class="reviews">${reviews.slice(0, 12).map(reviewCard).join('')}</div>` : `<p class="muted">Nenhuma avaliação com comentário ainda.</p>`}
+        </section>`;
+    }
+    return `
+      <section class="profile-head">
+        ${ui.face(pro, 92, 'big')}
+        <h1>${esc(pro.name)}${pro.verified ? ui.verified(22) : ''}</h1>
+        <p class="muted">${esc(catOf(pro).name)} · na FixUp desde ${pro.since}</p>
+        ${o.preview ? '<span class="avail pill on">Como os clientes veem o seu perfil</span>' : `<span class="avail pill${pro.availableNow ? ' on' : ''}">${esc(pro.availLabel)}</span>`}
+        <div class="stats">
+          <div><strong><span class="star">${icon('star')}</span>${ui.rating(pro.rating)}</strong><small>avaliação</small></div>
+          <div><strong>${jobs.length}</strong><small>serviços</small></div>
+          <div><strong>${prof.years}</strong><small>anos de experiência</small></div>
+        </div>
+        <div class="badges">${pro.verified ? `<span class="seal">${ui.mascot('badge', 22)}Profissional Verificado FixUp</span>` : ''}<span>${icon('shield-check')}Pagamento protegido</span></div>
+      </section>
+      ${o.top || ''}
+      <nav class="ptabs" role="tablist">${PTABS.map((t) => `<button role="tab" aria-selected="${t[0] === tab}" class="${t[0] === tab ? 'active' : ''}" data-action="profile-tab" data-arg="${t[0]}">${icon(t[2])}<span>${t[1]}</span></button>`).join('')}</nav>
+      ${body}`;
+  }
+
+  A['profile-tab'] = (el) => {
+    const cur = S.app.current(), path = cur.name === 'proProfile' ? '/p/' + cur.params.id : '/pro/profile/preview';
+    S.app.replace(path + qs({ s: cur.query.s, q: cur.query.q, tab: el.dataset.arg }));
+  };
+
+  /* Mantém a aba escolhida à vista na barra de abas (no celular ela rola na horizontal). */
+  const showTab = (root) => { const t = root.querySelector('.ptabs .active'); if (t) t.parentNode.scrollLeft = t.offsetLeft - 16; };
 
   screens.proProfile = {
     mode: 'client',
+    mount: (root) => { showTab(root); },
 
     render(p, q) {
       const pro = S.data.pro(p.id);
       if (!pro) return missing('Profissional não encontrado');
-      const svc = pro.services.find((s) => s.id === q.s) || pro.services[0];
+      const svc = pro.services.find((x) => x.id === q.s) || pro.services[0];
       const fav = st().favorites.includes(pro.id);
-      const jobs = S.db.byPro(pro.id);
       const similar = q.q ? S.match.forPro(pro.id, q.q, 3) : [];
-      const shown = similar.map((h) => h.job.id);
-      const recent = jobs.filter((j) => shown.indexOf(j.id) < 0).slice(0, 3);
-      const reviews = jobs.filter((j) => j.review).slice(0, 3);
       const chatTo = esc('/chat/' + pro.id + qs({ q: q.q }));
-      return `
-        ${backBar('', `<button class="icon-btn${fav ? ' fav' : ''}" data-action="toggle-fav" data-arg="${pro.id}" aria-label="Favoritar">${icon('heart')}</button>`)}
-        <section class="profile-head">
-          ${avatar(pro, 84)}
-          <h1>${esc(pro.name)}${pro.verified ? ui.verified(22) : ''}</h1>
-          <p class="muted">${esc(catOf(pro).name)} · na FixUp desde ${pro.since}</p>
-          <span class="avail pill${pro.availableNow ? ' on' : ''}">${esc(pro.availLabel)}</span>
-          <div class="stats">
-            <div><strong><span class="star">${icon('star')}</span>${ui.rating(pro.rating)}</strong><small>avaliação</small></div>
-            <div><strong>${pro.jobs}</strong><small>trabalhos</small></div>
-            <div><strong>${km(pro.km)}</strong><small>~${pro.eta} min até você</small></div>
-          </div>
-        </section>
-
-        ${similar.length ? `
+      const top = similar.length ? `
         <section class="section">
           <div class="match-box">
             <div class="mb-head">${icon('search-check')}<div><strong>${esc(ui.first(pro.name))} já resolveu casos como o seu</strong><small>Você descreveu: “${esc(q.q)}”</small></div></div>
@@ -496,40 +579,23 @@
             <button class="btn btn-primary btn-block" data-go="${chatTo}">${icon('message-circle')}Pedir orçamento pelo chat</button>
             <p class="hint">Você recebe uma proposta com valor fechado e paga pelo app.</p>
           </div>
-        </section>` : ''}
-
-        <section class="section">
-          <h3 class="h3">Sobre</h3>
-          <p class="body">${esc(pro.bio)}</p>
-          <div class="badges">${pro.verified ? `<span class="seal">${ui.mascot('badge', 22)}Profissional Verificado FixUp</span>` : ''}<span>${icon('shield-check')}Pagamento protegido</span></div>
-        </section>
-
+        </section>` : '';
+      const services = `
         <section class="section">
           <div class="section-head"><h3>Serviços com preço fechado</h3></div>
           <div class="svc-list">
-            ${pro.services.map((s) => `
-              <button class="svc${s.id === svc.id ? ' selected' : ''}" data-action="pick-service" data-arg="${s.id}">
+            ${pro.services.map((x) => `
+              <button class="svc${x.id === svc.id ? ' selected' : ''}" data-action="pick-service" data-arg="${x.id}">
                 <span class="radio"></span>
-                <span class="svc-main"><strong>${esc(s.name)}</strong><small>${icon('clock')}${esc(s.dur)}</small></span>
-                <b>${money(s.price)}</b>
+                <span class="svc-main"><strong>${esc(x.name)}</strong><small>${icon('clock')}${esc(x.dur)}</small></span>
+                <b>${money(x.price)}</b>
               </button>`).join('')}
           </div>
           <button class="ask" data-go="${chatTo}">${icon('messages-square')}<span><strong>Precisa de algo diferente?</strong><small>Combine pelo chat e receba uma proposta personalizada.</small></span>${icon('chevron-right')}</button>
-        </section>
-
-        <section class="section">
-          <div class="section-head">${ui.heading('Trabalhos realizados')}<span class="muted sm">${jobs.length} no histórico</span></div>
-          <div class="kinds">${S.db.kinds(pro.id).slice(0, 4).map((k) => `<span>${esc(k.label)}<b>${k.count}</b></span>`).join('')}</div>
-          <div class="jobs">${recent.map((j) => ui.jobCard(j)).join('')}</div>
-          <button class="btn btn-soft btn-block" data-action="open-jobs" data-arg="${pro.id}">Ver os ${jobs.length} trabalhos</button>
-        </section>
-
-        ${reviews.length ? `
-        <section class="section">
-          <div class="section-head">${ui.heading('Avaliações')}<span class="muted sm">${ui.rating(pro.rating)} de média</span></div>
-          <div class="reviews">${reviews.map(reviewCard).join('')}</div>
-        </section>` : ''}
-
+        </section>`;
+      return `
+        ${backBar('', `<button class="icon-btn${fav ? ' fav' : ''}" data-action="toggle-fav" data-arg="${pro.id}" aria-label="Favoritar">${icon('heart')}</button>`)}
+        ${proPublic(pro, { tab: q.tab, top, services })}
         <div class="cta-bar">
           <button class="btn btn-soft" data-go="${chatTo}">${icon('message-circle')}Conversar</button>
           <button class="btn btn-primary grow" data-action="request" data-arg="${pro.id}/${svc.id}"><span class="cta-label">Solicitar · ${money(svc.price)}</span></button>
@@ -543,13 +609,13 @@
   };
 
   A['open-jobs'] = (el) => {
-    const pro = S.data.pro(el.dataset.arg);
+    const pro = el.dataset.arg === 'me' ? S.blocks.meAsPro() : S.data.pro(el.dataset.arg);
     if (!pro) return;
     const jobs = S.db.byPro(pro.id);
     ui.sheet.open(`
       <div class="sheet-head"><h3>Trabalhos de ${esc(ui.first(pro.name))}</h3>${closeBtn}</div>
       <div class="kinds">${S.db.kinds(pro.id).map((k) => `<span>${esc(k.label)}<b>${k.count}</b></span>`).join('')}</div>
-      <div class="jobs">${jobs.slice(0, 40).map((j) => ui.jobCard(j)).join('')}</div>
+      <div class="jobs">${jobs.slice(0, 40).map((j) => ui.jobCard(j, null, { provider: pro.id === 'me' })).join('')}</div>
       ${jobs.length > 40 ? `<p class="hint">Mostrando os 40 mais recentes de ${jobs.length}.</p>` : ''}`);
   };
 
@@ -567,6 +633,7 @@
       ui.toast('Você já tem um pedido em andamento.', 'info');
       return S.app.go('/track/' + active.id);
     }
+    if (!S.guard.allow('hire')) return;
     S.app.go('/checkout/' + el.dataset.arg);
   };
 
@@ -583,7 +650,8 @@
       if (!S.draft || S.draft.proId !== pro.id || S.draft.serviceId !== svc.id) {
         S.draft = { proId: pro.id, serviceId: svc.id, note: '', method: st().wallet.defaultMethod };
       }
-      const d = S.draft, q = S.pricing.quote(svc.price, pro.km), loc = st().location;
+      const d = S.draft, loc = st().location, routeKm = d.routeKm != null ? d.routeKm : pro.km;
+      const q = S.pricing.fromClientPrice(svc.price, S.pricing.defaultDisplacement(routeKm), routeKm);
       return `
         ${backBar('Confirmar pedido')}
         <section class="section first">
@@ -610,7 +678,7 @@
             </button>
             <div class="row static">
               <span class="row-ic">${icon('clock')}</span>
-              <span class="row-main"><strong>Atendimento imediato</strong><small>Chegada estimada em ${pro.eta} min · ${km(pro.km)}</small></span>
+              <span class="row-main"><strong>Atendimento imediato</strong><small id="co-route">Chegada estimada em ${pro.eta} min · ${d.routeKm != null ? km(d.routeKm) + ' pela rota mais curta' : 'calculando a rota…'}</small></span>
             </div>
           </div>
         </section>
@@ -622,11 +690,11 @@
 
         <section class="section">
           <h3 class="h3">Resumo</h3>
-          <div class="card">${bill(q, pro.km)}</div>
-          <p class="note">${icon('shield-check')}<span>O valor fica retido pela FixUp e só é liberado ao profissional quando você confirmar a conclusão. Sem mensalidade e sem taxa extra para você.</span></p>
+          <div class="card">${bill(q)}</div>
+          <p class="note">${icon('shield-check')}<span>O valor fica retido pela FixUp e só é liberado ao profissional quando você confirmar a conclusão. O preço que você vê é o preço final.</span></p>
         </section>
 
-        <div class="cta-bar"><button class="btn btn-primary btn-block btn-lg" data-action="pay">Pagar ${money(q.total)}</button></div>`;
+        <div class="cta-bar"><button class="btn btn-primary btn-block btn-lg" data-action="pay">Pagar ${money(q.clientTotalAmount)}</button></div>`;
     },
 
     mount(root, p) {
@@ -640,7 +708,12 @@
         S.map.user(map, loc);
         S.map.fit(map, [pro.pos, loc], { t: 34, b: 30, l: 40, r: 40 });
       }
-      return () => { if (map) map.remove(); };
+      /* Distância da rota mais curta: decide se há taxa de deslocamento (só acima de 15 km). */
+      let alive = true;
+      if (S.draft && S.draft.routeKm == null) {
+        S.geo.shortestRouteKm(pro.pos, loc).then((km2) => { if (alive && S.draft && S.draft.proId === pro.id) { S.draft.routeKm = km2; S.app.refresh(); } });
+      }
+      return () => { alive = false; if (map) map.remove(); };
     }
   };
 
@@ -657,9 +730,11 @@
     if (!d) return;
     const active = S.orders.active();
     if (active) { ui.toast('Você já tem um pedido em andamento.', 'info'); return S.app.go('/track/' + active.id); }
+    if (!S.guard.allow('hire')) return;
     const pro = S.data.pro(d.proId), svc = pro.services.find((s) => s.id === d.serviceId);
-    const q = S.pricing.quote(svc.price, pro.km);
-    if (!S.pay.canPay(d.method, q.total)) return ui.toast('Saldo insuficiente. Escolha outra forma de pagamento.', 'bad');
+    const routeKm = d.routeKm != null ? d.routeKm : pro.km;
+    const total = S.pricing.fromClientPrice(svc.price, S.pricing.defaultDisplacement(routeKm), routeKm).clientTotalAmount;
+    if (!S.pay.canPay(d.method, total)) return ui.toast('Saldo insuficiente. Escolha outra forma de pagamento.', 'bad');
 
     const finish = () => {
       const order = S.orders.create(d);
@@ -667,7 +742,7 @@
       S.app.replace('/track/' + order.id, {});
       ui.toast('Pagamento aprovado. Valor protegido até a conclusão.', 'ok');
     };
-    if (d.method === 'pix') return openPix(q.total, 'Pague com Pix', finish);
+    if (d.method === 'pix') return openPix(total, 'Pague com Pix', finish);
     el.classList.add('loading');
     setTimeout(finish, 1400);
   };
@@ -690,13 +765,16 @@
         <span class="eta" id="tp-badge">${esc(t.badge)}</span>
       </div>
       ${stepsHtml(STEP[o.status])}
-      <div class="tp-pro">
-        ${avatar(pro, 46)}
-        <span class="row-main"><strong>${esc(pro.name)}</strong><small>${esc(catOf(pro).name)} · <span class="star">${icon('star')}${ui.rating(pro.rating)}</span></small></span>
-        <button class="icon-btn soft" data-go="/chat/${pro.id}" aria-label="Enviar mensagem">${icon('message-circle')}</button>
-        <button class="icon-btn soft" data-action="call-pro" aria-label="Ligar">${icon('phone')}</button>
+      <div class="id-card">
+        ${ui.face(pro, 64, 'big')}
+        <div class="id-main"><small>Confira o rosto na chegada</small><strong>${esc(pro.name)}${pro.verified ? ui.verified(16) : ''}</strong><span>${esc(catOf(pro).name)} · <span class="star">${icon('star')}${ui.rating(pro.rating)}</span> · CPF ${S.cpf.hidden((o.parties || {}).provider ? o.parties.provider.cpf : '')}</span></div>
+        <div class="id-actions">
+          <button class="icon-btn soft" data-go="/chat/${pro.id}" aria-label="Enviar mensagem">${icon('message-circle')}</button>
+          <button class="icon-btn soft" data-action="call-pro" aria-label="Ligar">${icon('phone')}</button>
+        </div>
       </div>
-      <div class="tp-pay">${icon('lock')}<span><strong>${money(o.quote.total)}</strong> retidos com segurança · ${esc(S.pay.label(o.method))}</span></div>
+      <p class="id-note">${ui.face(st().user, 26)}<span>Sua foto foi enviada a ${esc(ui.first(pro.name))} para que ele reconheça você no local.</span></p>
+      <div class="tp-pay">${icon('lock')}<span><strong>${money(o.amounts.clientTotalAmount)}</strong> retidos com segurança · ${esc(S.pay.label(o.method))}</span></div>
       ${o.status === 'awaiting' ? `<button class="btn btn-primary btn-block btn-lg" data-action="confirm-done" data-arg="${o.id}">${icon('circle-check')}Confirmar e liberar pagamento</button>` : ''}
       ${S.orders.canCancel(o) ? `<button class="btn btn-ghost btn-block btn-sm" data-action="cancel-order" data-arg="${o.id}">Cancelar pedido</button>` : ''}`;
   }
@@ -789,7 +867,7 @@
   A['cancel-order'] = async (el) => {
     const o = S.orders.get(el.dataset.arg);
     if (!o) return;
-    const ok = await ui.confirm({ title: 'Cancelar este pedido?', text: `O valor de ${money(o.quote.total)} será estornado integralmente.`, ok: 'Cancelar pedido', cancel: 'Manter pedido', danger: true });
+    const ok = await ui.confirm({ title: 'Cancelar este pedido?', text: `O valor de ${money(o.amounts.clientTotalAmount)} será estornado integralmente.`, ok: 'Cancelar pedido', cancel: 'Manter pedido', danger: true });
     if (!ok) return;
     if (!S.orders.canCancel(o)) return ui.toast('O profissional já chegou: não é mais possível cancelar por aqui.', 'bad');
     S.orders.cancel(o);
@@ -802,18 +880,28 @@
 
   function openRating(o) {
     const pro = S.data.pro(o.proId);
-    let starsValue = 5;
+    let starsValue = 5, photos = [];
+    const drawPhotos = () => {
+      const box = document.getElementById('rate-photos');
+      if (box) box.innerHTML = photos.map((src, i) => `<span class="up-thumb"><img src="${src}" alt="Foto ${i + 1} do serviço"><button data-action="rate-photo-del" data-arg="${i}" aria-label="Remover foto">${icon('x')}</button></span>`).join('');
+      ui.refreshIcons();
+    };
     ui.sheet.open(`
       <div class="rate">
         <span class="match-ok">${icon('circle-check')}</span>
         <h3>Pagamento liberado</h3>
-        <p class="muted">${money(o.quote.total)} · ${esc(o.serviceName)}</p>
-        <div class="rate-pro">${avatar(pro, 52)}<strong>Como foi o atendimento de ${esc(ui.first(pro.name))}?</strong></div>
+        <p class="muted">${money(o.amounts.clientTotalAmount)} · ${esc(o.serviceName)}</p>
+        <div class="rate-pro">${ui.face(pro, 52)}<strong>Como foi o atendimento de ${esc(ui.first(pro.name))}?</strong></div>
         <div class="rate-stars" id="rate-stars">${[1, 2, 3, 4, 5].map((n) => `<button class="on" data-action="rate-star" data-arg="${n}" aria-label="${n} estrelas">${icon('star')}</button>`).join('')}</div>
         <div class="chips wrap" id="rate-tags">${TAGS.map((t) => `<button class="chip sm" data-action="rate-tag" data-arg="${t}">${t}</button>`).join('')}</div>
         <textarea class="textarea" rows="2" id="rate-comment" placeholder="Deixe um comentário (opcional)"></textarea>
+        <div class="up-box">
+          <div class="up-head"><strong>Fotos do serviço</strong><small>Antes e depois, ou o resultado final. Elas aparecem com a sua avaliação, como prova de que o serviço aconteceu.</small></div>
+          <div class="up-list" id="rate-photos"></div>
+          <button class="btn btn-soft btn-sm" data-action="rate-photo-add">${icon('camera')}Adicionar fotos</button>
+        </div>
         <button class="btn btn-primary btn-block btn-lg" data-action="rate-send">Enviar avaliação</button>
-        <p class="hint">O serviço entrou no histórico de trabalhos de ${esc(ui.first(pro.name))}, com a sua avaliação.</p>
+        <p class="hint">O serviço entrou no histórico de trabalhos de ${esc(ui.first(pro.name))}, com a sua avaliação. ${esc(ui.first(pro.name))} também avalia você.</p>
       </div>`, { onClose() { S.app.replace('/order/' + o.id, {}); } });
 
     A['rate-star'] = (el) => {
@@ -821,8 +909,11 @@
       document.querySelectorAll('#rate-stars button').forEach((b, i) => b.classList.toggle('on', i < starsValue));
     };
     A['rate-tag'] = (el) => el.classList.toggle('active');
+    A['rate-photo-add'] = async () => { photos = photos.concat(await S.media.pick({ multiple: true, limit: 6 - photos.length })).slice(0, 6); drawPhotos(); };
+    A['rate-photo-del'] = (el) => { photos.splice(+el.dataset.arg, 1); drawPhotos(); };
     A['rate-send'] = () => {
       const tags = Array.from(document.querySelectorAll('#rate-tags .chip.active')).map((b) => b.dataset.arg);
+      if (photos.length && o.jobId) S.media.save(photos, { owner: o.proId, kind: 'job', jobId: o.jobId, by: 'client' });
       S.orders.rate(o, { stars: starsValue, tags, comment: document.getElementById('rate-comment').value.trim() });
       ui.sheet.close();
       ui.toast('Avaliação enviada. Obrigado!', 'ok');
@@ -839,7 +930,7 @@
       <button class="order-card${o.id === activeId ? ' active' : ''}" data-go="${final ? '/order/' : '/track/'}${o.id}">
         ${avatar(pro, 46)}
         <span class="row-main"><strong>${esc(o.serviceName)}</strong><small>${esc(pro.name)} · ${ui.day(o.createdAt)}, ${ui.time(o.createdAt)}</small></span>
-        <span class="order-right"><strong>${money(o.quote.total)}</strong>${statusPill(o)}</span>
+        <span class="order-right"><strong>${money(o.amounts.clientTotalAmount)}</strong>${statusPill(o)}</span>
       </button>`;
   }
 
@@ -885,8 +976,8 @@
     render(p) {
       const o = S.orders.get(p.id);
       if (!o) return missing('Pedido não encontrado');
-      const pro = S.data.pro(o.proId), q = o.quote, done = o.status === 'completed', cancelled = o.status === 'cancelled';
-      const share = Math.round((q.payout / q.total) * 100);
+      const pro = S.data.pro(o.proId), done = o.status === 'completed', cancelled = o.status === 'cancelled';
+      const job = o.jobId ? S.db.get(o.jobId) : null, shots = job ? S.media.ofJob(job) : [];
       return md(ordersList(o.id), `
         ${backBar('Pedido ' + o.code)}
         <section class="receipt-head ${done ? 'ok' : cancelled ? 'bad' : 'live'}">
@@ -910,19 +1001,25 @@
         <section class="section">
           <h3 class="h3">Pagamento</h3>
           <div class="card">
-            ${bill(q, o.km)}
+            ${bill(o.amounts)}
             <p class="paid-with">${icon(S.pay.method(o.method).icon)}<span>${cancelled ? 'Estornado para' : 'Pago com'} ${esc(S.pay.label(o.method))}</span></p>
           </div>
         </section>
 
         ${done ? `
         <section class="section">
-          <h3 class="h3">Para onde foi o seu pagamento</h3>
-          <div class="card split">
-            <div class="split-bar"><span style="width:${share}%"></span></div>
-            <div class="split-row"><span><i class="dot a"></i>Repasse a ${esc(ui.first(pro.name))}</span><strong>${money(q.payout)}</strong></div>
-            <div class="split-row"><span><i class="dot b"></i>Comissão FixUp (${pct()})</span><strong>${money(q.commission)}</strong></div>
+          <h3 class="h3">Comprovante de pagamento</h3>
+          <div class="card rcpt-mini">
+            <div class="rm-top">${ui.mascot('badge', 34)}<div><strong>Pagamento liquidado</strong><small>Comprovante com código de autenticação, CPFs mascarados e dados do serviço.</small></div></div>
+            ${S.receipts.buttons('order', o.id)}
           </div>
+        </section>` : ''}
+
+        ${job ? `
+        <section class="section">
+          <div class="section-head"><h3>Fotos do serviço</h3><span class="muted sm">${shots.length} ${shots.length === 1 ? 'foto' : 'fotos'}</span></div>
+          ${shots.length ? S.media.strip(shots, 8, 'grid') : '<p class="muted sm">Registre o resultado com fotos de antes e depois. Elas aparecem com a sua avaliação no perfil do profissional.</p>'}
+          <button class="btn btn-soft btn-block btn-sm" data-action="order-photo-add" data-arg="${o.id}">${icon('camera')}Adicionar fotos do serviço</button>
         </section>` : ''}
 
         <section class="section">
@@ -944,13 +1041,14 @@
   const TX_STATE = { held: 'Retido', released: 'Pago', refunded: 'Estornado', done: 'Concluído' };
 
   function txRow(t) {
-    const refunded = t.state === 'refunded';
+    const refunded = t.state === 'refunded', o = t.orderId && S.orders.get(t.orderId), receipt = o && o.status === 'completed';
+    const tag = receipt ? 'button' : 'div', attr = receipt ? ` data-action="rcpt-order" data-arg="${o.id}" title="Ver comprovante de pagamento"` : '';
     return `
-      <div class="tx">
+      <${tag} class="tx${receipt ? ' tx-btn' : ''}"${attr}>
         <span class="row-ic ${t.kind === 'topup' ? 'in' : ''}">${icon(t.kind === 'topup' ? 'arrow-down-left' : 'arrow-up-right')}</span>
-        <span class="row-main"><strong>${esc(t.title)}</strong><small>${ui.day(t.at)} · ${esc(S.pay.label(t.method))} · ${TX_STATE[t.state]}</small></span>
+        <span class="row-main"><strong>${esc(t.title)}</strong><small>${ui.day(t.at)} · ${esc(S.pay.label(t.method))} · ${TX_STATE[t.state]}${receipt ? ' · comprovante' : ''}</small></span>
         <b class="${t.amount > 0 ? 'pos' : refunded ? 'void' : ''}">${t.amount > 0 ? '+ ' : '− '}${money(Math.abs(t.amount))}</b>
-      </div>`;
+      </${tag}>`;
   }
 
   screens.wallet = {
@@ -980,11 +1078,21 @@
         </section>
 
         <section class="section">
-          <h3 class="h3">Movimentações</h3>
+          <h3 class="h3">Histórico financeiro</h3>
           <div class="card flush">${w.tx.length ? w.tx.map(txRow).join('') : '<p class="muted pad">Nenhuma movimentação ainda.</p>'}</div>
         </section>
         <div class="spacer"></div>`;
     }
+  };
+
+  A['order-photo-add'] = async (el) => {
+    const o = S.orders.get(el.dataset.arg);
+    if (!o || !o.jobId) return;
+    const list = await S.media.pick({ multiple: true, limit: 6 });
+    if (!list.length) return;
+    S.media.save(list, { owner: o.proId, kind: 'job', jobId: o.jobId, by: 'client' });
+    S.app.refresh();
+    ui.toast(list.length === 1 ? 'Foto adicionada ao serviço.' : list.length + ' fotos adicionadas ao serviço.', 'ok');
   };
 
   A['set-default-method'] = (el) => {
@@ -1020,31 +1128,35 @@
 
     render() {
       const s = st(), isPro = s.mode === 'pro', pref = S.theme.pref(), info = S.db.info();
-      const who = isPro ? { name: s.pro.name, sub: S.data.cat(s.pro.cat).name + ' · conta profissional', hue: 252 } : { name: s.user.name, sub: s.user.email, hue: 236 };
+      const me = isPro ? s.pro : s.user, g = S.guard.status(isPro ? 'provider' : 'client');
+      const who = { name: me.name, photo: me.photo, photoDemo: me.photoDemo, hue: isPro ? 252 : 236, sub: isPro ? S.data.cat(s.pro.cat).name + ' · conta profissional' : s.user.email };
+      const secSub = g.restriction ? 'Restrição de segurança no CPF' : g.missing.length ? (g.missing.indexOf('photo') >= 0 ? 'Falta a foto do rosto' : 'Falta o CPF') + ' para ' + (isPro ? 'atender' : 'contratar') : 'Verificada · CPF ' + S.cpf.hidden(me.cpf);
       const row = (ic, title, sub, attr) => `<button class="row" ${attr}><span class="row-ic">${icon(ic)}</span><span class="row-main"><strong>${title}</strong><small>${sub}</small></span>${icon('chevron-right', 'muted-ic')}</button>`;
       return `
         <header class="topbar plain"><h1>Perfil</h1></header>
         <section class="section first">
-          <div class="card user-card">${avatar(who, 60)}<span class="row-main"><strong>${esc(who.name)}</strong><small>${esc(who.sub)}</small></span></div>
+          <div class="card user-card">${ui.face(who, 60)}<span class="row-main"><strong>${esc(who.name)}</strong><small>${esc(who.sub)}</small></span>${!g.missing.length && !g.restriction ? `<span class="seal">${ui.mascot('badge', 22)}Verificada</span>` : `<span class="status-pill ${g.restriction ? 'bad' : 'live'}">${g.restriction ? 'Bloqueada' : 'Pendente'}</span>`}</div>
         </section>
 
         <section class="section">
           <button class="mode-card" data-action="set-mode" data-arg="${isPro ? 'client' : 'pro'}">
             <span class="mode-ic">${icon(isPro ? 'user' : 'briefcase')}</span>
-            <span class="row-main"><strong>${isPro ? 'Voltar para o modo cliente' : 'Você presta serviços?'}</strong><small>${isPro ? 'Contrate profissionais perto de você.' : `Mude para o modo profissional. Sem mensalidade: só ${pct()} por serviço.`}</small></span>
+            <span class="row-main"><strong>${isPro ? 'Voltar para o modo cliente' : 'Você presta serviços?'}</strong><small>${isPro ? 'Contrate profissionais perto de você.' : 'Mude para o modo profissional. Sem mensalidade.'}</small></span>
             ${icon('arrow-right')}
           </button>
         </section>
 
         <section class="section">
           <div class="card flush">
+            ${row(g.restriction ? 'shield-alert' : 'shield-check', 'Conta e segurança', esc(secSub), 'data-go="/account"')}
             ${isPro
-              ? row('banknote', 'Ganhos e saques', 'Saldo disponível: ' + money(s.pro.balance), 'data-go="/pro/earnings"') +
+              ? row('id-card', 'Perfil profissional', 'Resumo, cursos técnicos, especialidades e portfólio', 'data-go="/pro/profile"') +
+                row('banknote', 'Ganhos e saques', 'Saldo disponível: ' + money(s.pro.balance), 'data-go="/pro/earnings"') +
                 row('clipboard-list', 'Meus trabalhos realizados', S.db.byPro('me').length + ' registros no seu histórico', 'data-action="open-my-jobs"')
               : row('map-pin', 'Endereço de atendimento', esc(s.location.label), 'data-action="open-location"') +
                 row('wallet', 'Pagamentos e carteira', 'Saldo: ' + money(s.wallet.balance) + ' · padrão: ' + esc(S.pay.label(s.wallet.defaultMethod)), 'data-go="/wallet"') +
                 row('heart', 'Favoritos', s.favorites.length + (s.favorites.length === 1 ? ' profissional salvo' : ' profissionais salvos'), 'data-action="open-favs"')}
-            ${row('percent', 'Taxas e comissão', 'Sem mensalidade · ' + pct() + ' por serviço', 'data-action="open-fees"')}
+            ${row('receipt-text', 'Como funcionam os preços', isPro ? 'Você vê sempre o valor líquido' : 'O preço que você vê é o preço final', 'data-action="open-fees"')}
           </div>
         </section>
 
@@ -1077,18 +1189,19 @@
       ${favs.length ? `<div class="list">${favs.map((p) => proCard(p)).join('')}</div>` : '<p class="muted">Toque no coração no perfil de um profissional para salvá-lo aqui.</p>'}`);
   };
 
+  /* Preço cego: cada lado vê só o seu valor, e a explicação também é diferente para cada um. */
   A['open-fees'] = () => {
-    const q = S.pricing.quote(100, 2);
+    const isPro = st().mode === 'pro', t = S.config.travel;
+    const items = isPro
+      ? [['wallet', 'Você vê o valor líquido', 'Em solicitações, propostas, ganhos e comprovantes aparece sempre o que entra no seu saldo.'],
+        ['route', `Deslocamento grátis até ${t.freeKm} km`, `Pela rota mais curta. Acima disso, você pode cobrar até ${money(t.maxPerExcessKm)} por km excedente, e esse valor é todo seu.`],
+        ['badge-percent', 'Sem mensalidade', 'Não há mensalidade, taxa de adesão nem taxa de saque.']]
+      : [['receipt-text', 'O preço que você vê é o preço final', 'Já inclui tudo: não aparece nenhuma taxa extra na hora de pagar.'],
+        ['route', `Deslocamento grátis até ${t.freeKm} km`, 'Pela rota mais curta entre o profissional e você. Acima disso, a taxa aparece separada no resumo, com teto por km.'],
+        ['lock', 'Pagamento protegido', 'O valor fica retido pela FixUp e só é liberado quando você confirma a conclusão.']];
     ui.sheet.open(`
-      <div class="sheet-head"><h3>Taxas e comissão</h3>${closeBtn}</div>
-      <p class="muted">A FixUp não cobra mensalidade nem taxa de adesão. A plataforma retém ${pct()} do valor de cada serviço concluído; o restante vai direto para o profissional.</p>
-      <div class="card">
-        <dl class="bill">
-          <div><dt>Exemplo: serviço + deslocamento</dt><dd>${money(q.total)}</dd></div>
-          <div><dt>Comissão FixUp (${pct()})</dt><dd>− ${money(q.commission)}</dd></div>
-          <div class="bill-total"><dt>Profissional recebe</dt><dd>${money(q.payout)}</dd></div>
-        </dl>
-      </div>
+      <div class="sheet-head"><h3>Como funcionam os preços</h3>${closeBtn}</div>
+      <div class="card flush">${items.map((h) => `<div class="row static"><span class="row-ic">${icon(h[0])}</span><span class="row-main"><strong class="wrap">${h[1]}</strong><small>${h[2]}</small></span></div>`).join('')}</div>
       <button class="btn btn-soft btn-block" data-action="sheet-close">Entendi</button>`);
   };
 
