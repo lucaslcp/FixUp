@@ -251,6 +251,7 @@ img/icone-*.png       ícones da tela inicial do iPhone e da prévia do link
 img/categorias/       ilustrações do pica-pau de cada categoria (WebP)
 ferramentas/logo      gera os SVGs e os ícones a partir do PNG do logo (npm run gerar)
 ferramentas/categorias gera as ilustrações das categorias a partir da arte (npm run gerar)
+ferramentas/versao.js  marca os arquivos do index.html com a versão, para o navegador baixar a nova
 css/leaflet-core.css  regras essenciais do mapa para a versão publicada
 js/config.js          versão, comissão, taxas, provedores de mapa e notas de atualização
 js/geo.js             GPS, distâncias, rotas e endereço

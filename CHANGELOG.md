@@ -4,6 +4,16 @@ Todas as mudanças do FixUp, da mais recente para a mais antiga.
 As versões seguem o formato `MAIOR.MENOR.CORREÇÃO`: o primeiro número muda quando o app muda de forma
 grande, o segundo quando ganha recursos novos e o terceiro quando só há correções.
 
+## 3.3.4 — 17 de novembro de 2026
+
+### Corrigido
+
+- Depois de uma atualização, o navegador podia continuar mostrando a versão anterior por até
+  10 minutos (ou até recarregar a página), porque guardava os arquivos de CSS e JavaScript. Foi assim
+  que a lupa da 3.3.2 continuou aparecendo em cima do bico depois da correção da 3.3.3. Agora o
+  `index.html` pede cada arquivo com o número da versão (`js/ui.js?v=3.3.4`), e cada versão nova é
+  baixada na hora. A marca é atualizada por `node ferramentas/versao.js`.
+
 ## 3.3.3 — 17 de novembro de 2026
 
 ### Corrigido

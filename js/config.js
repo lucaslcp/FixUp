@@ -10,7 +10,7 @@
 
   S.config = {
     appName: 'FixUp',
-    version: '3.3.3',
+    version: '3.3.4',
     embedded,
 
     /** Parte da plataforma em cada serviço concluído (0.08 = 8%). Não há mensalidade.
@@ -65,6 +65,10 @@
 
     /** Notas de atualização mostradas em Perfil > Novidades (o histórico completo fica no CHANGELOG.md). */
     releases: [
+      {
+        v: '3.3.4', date: '17 nov 2026', title: 'Atualizações aparecem na hora',
+        notes: ['O site passa a pedir os arquivos pelo número da versão: depois de cada atualização, o navegador baixa a versão nova em vez de mostrar a anterior guardada.']
+      },
       {
         v: '3.3.3', date: '17 nov 2026', title: 'Lupa abaixo do bico',
         notes: ['No bloco "Quem já resolveu um caso como o seu", a lupa do pica-pau saiu de cima do bico e foi para a frente do peito.']
