@@ -124,6 +124,8 @@
   }
   function silent(path) { setPath(path); }
   function back() {
+    /* Uma foto em tela cheia aberta fecha primeiro (também atende o botão voltar do Android). */
+    if (S.media && S.media.isOpen()) return S.media.close();
     if (EMBED) {
       if (!stack.length) return replace(homeOf(), {});
       mem = stack.pop();
@@ -207,14 +209,16 @@
   try { window.matchMedia('(min-width: 768px)').addEventListener('change', () => { if (ready) refresh(); }); } catch (e) { /* navegador antigo */ }
 
   /* ---------- Abertura animada ----------
-     A abertura já está na página (index.html) e começa a se animar assim que o logo carrega.
-     Ela sai quando a animação termina e o app está pronto, o que vier por último.
+     A abertura já está na página (index.html) com o SVG embutido.
+     Ela só começa quando o app termina o boot (e reaparece sempre ao reabrir o app).
      Um toque na tela pula a animação. */
-  const ABERTURA_MS = 2450, ABERTURA_REDUZIDA_MS = 700;
-  const menosMovimento = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const ABERTURA_MS = 2450;
   let aberturaHtml = '';
+  let aberturaTimer = null;
 
   function fecharAbertura() {
+    clearTimeout(aberturaTimer);
+    aberturaTimer = null;
     const el = document.getElementById('abertura');
     if (!el || el.classList.contains('saindo')) return;
     el.classList.add('saindo');
@@ -225,30 +229,30 @@
   function agendarAbertura() {
     const el = document.getElementById('abertura');
     if (!el) return;
+    clearTimeout(aberturaTimer);
     el.addEventListener('click', fecharAbertura);
-    const dur = menosMovimento() ? ABERTURA_REDUZIDA_MS : ABERTURA_MS;
-    const sair = () => setTimeout(fecharAbertura, Math.max(0, dur - (performance.now() - (+el.dataset.t || performance.now()))));
-    if (el.dataset.t) return sair();
-    el.addEventListener('fixup-pronto', sair, { once: true });
-    setTimeout(fecharAbertura, 4000 + dur);   // o logo não carregou: segue sem ele
+    requestAnimationFrame(() => {
+      if (!el.isConnected || el.classList.contains('saindo')) return;
+      el.dataset.t = performance.now();
+      el.classList.add('pronto');
+      aberturaTimer = setTimeout(fecharAbertura, ABERTURA_MS);
+    });
   }
 
-  /** Mostra a abertura de novo (Perfil > Sobre o app). */
+  /** Mostra a abertura de novo (Perfil > Sobre o app e reabertura no Android). */
   function reverAbertura() {
+    if (!aberturaHtml) return;
+    clearTimeout(aberturaTimer);
     const device = document.getElementById('app'), old = document.getElementById('abertura');
     if (old) old.remove();
-    if (!aberturaHtml) return;
     const box = document.createElement('div');
     box.innerHTML = aberturaHtml;
-    const el = box.firstElementChild, img = el.querySelector('img');
+    const el = box.firstElementChild;
     el.classList.remove('saindo', 'pronto');
     delete el.dataset.t;
-    const ok = () => { if (el.dataset.t) return; el.dataset.t = performance.now(); el.classList.add('pronto'); el.dispatchEvent(new Event('fixup-pronto')); };
-    img.addEventListener('load', ok, { once: true });
-    img.addEventListener('error', ok, { once: true });
-    img.src = img.getAttribute('src').split('?')[0] + '?r=' + Date.now();   // endereço novo: a animação recomeça do zero
     device.appendChild(el);
     device.classList.add('com-abertura');
+    void el.offsetWidth;
     ui.sheet.close();
     agendarAbertura();
   }

@@ -268,3 +268,12 @@ js/app.js             rotas, navegação e inicialização
 - **Tempo real**: posição do profissional e status do pedido por WebSocket ou push, no lugar de `js/orders.js`.
 - **Mapas**: provedor contratado (Mapbox, Google Maps ou MapTiler); os serviços públicos usados aqui não são para produção.
 - **Aplicativo**: empacotar como PWA ou portar as telas para React Native ou Flutter.
+
+## Aplicativo Android (APK)
+
+O arquivo instalável pronto fica na raiz do repositório em `FixUp.apk`, empacotado pelo projeto Android em `android/`.
+
+- **Instalação direta:** transfira `FixUp.apk` para o celular Android e abra o arquivo (autorizando instalação de fontes desconhecidas).
+- **Recompilar o APK:** na pasta `android/`, execute `.\gradlew.bat assembleRelease` (ou `./gradlew assembleRelease` no Linux/macOS). O build copia automaticamente `index.html`, `css/`, `js/` e `img/` para dentro do app e gera o APK assinado.
+- **Recursos embarcados:** o app usa `WebViewAssetLoader` em `https://appassets.androidplatform.net/assets/index.html` (para manter GPS real, `localStorage` e `IndexedDB` funcionando) e inclui Leaflet e Lucide localmente para carregamento rápido.
+

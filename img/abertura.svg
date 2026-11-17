@@ -21,10 +21,6 @@
     30%, 80% { transform: rotate(-1deg); }
   }
   @keyframes brilho { 0% { opacity: 0; transform: scale(.4); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.25); } }
-  @media (prefers-reduced-motion: reduce) {
-    .d1, .d2, .d3, .d4, .ave, .bico, .chave { animation: none; }
-    .faisca { display: none; }
-  }
 </style>
 <defs>
   <mask id="casa" maskUnits="userSpaceOnUse" x="38" y="38" width="347" height="337">

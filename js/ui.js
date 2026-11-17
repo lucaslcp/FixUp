@@ -164,6 +164,7 @@
       document.documentElement.setAttribute('data-fx-theme', t);
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', t === 'dark' ? '#0A0A1F' : '#0404E2');
+      if (window.FixUpAndroid && window.FixUpAndroid.setTheme) window.FixUpAndroid.setTheme(t);
       document.querySelectorAll('.theme-seg button').forEach((b) => b.classList.toggle('active', b.dataset.arg === this.pref()));
       return t;
     },
