@@ -4,6 +4,25 @@ Todas as mudanças do FixUp, da mais recente para a mais antiga.
 As versões seguem o formato `MAIOR.MENOR.CORREÇÃO`: o primeiro número muda quando o app muda de forma
 grande, o segundo quando ganha recursos novos e o terceiro quando só há correções.
 
+## 3.1.0 — 17 de novembro de 2026
+
+### Novo
+
+- **Pica-pau nas categorias.** Os ícones de linha das categorias deram lugar a ilustrações do pica-pau
+  fazendo cada serviço, na tela inicial e em "Todas as categorias". As imagens ficam em `img/categorias/`
+  (WebP com fundo transparente, então funcionam no tema claro e no escuro).
+- **Categoria Piscina**, com ilustração própria no mesmo estilo: limpeza e aspiração, tratamento de água
+  verde, correção de pH e cloro, troca da areia do filtro e visita técnica. Dois profissionais de exemplo,
+  com histórico de trabalhos, cursos e especialidades.
+- A busca reconhece o vocabulário de piscina ("água verde", "turva", "cloro", "filtro da piscina",
+  "bomba da piscina", "piscineiro") e as marcas Dancor, Sodramar e Nautilus.
+
+### Mudou
+
+- Os blocos das categorias ficaram maiores para a ilustração aparecer bem no celular.
+- O banco de trabalhos de exemplo é recriado uma vez para incluir os trabalhos de piscina. Os trabalhos
+  feitos no app são mantidos.
+
 ## 3.0.0 — 17 de novembro de 2026
 
 Versão grande: as oito ideias priorizadas pela equipe para o FixUp. Os dados salvos da versão anterior

@@ -97,8 +97,18 @@
       ['Assentamento de piso (por m²)', 45, '1 h'],
       ['Reparo de reboco e gesso', 140, '3 h'],
       ['Visita para orçamento', 60, '30 min']
+    ]),
+    C('piscina', 'Piscineiro', 'Piscina', 'waves', 'piscina piscineiro limpeza de piscina agua verde turva cloro ph filtro bomba aspirar aspiracao algas', [
+      ['Limpeza e aspiração de piscina', 130, '1 h 30'],
+      ['Tratamento de água verde', 240, '3 h'],
+      ['Correção de pH e cloro', 90, '45 min'],
+      ['Troca da areia do filtro', 280, '2 h 30'],
+      ['Visita técnica e análise da água', 70, '30 min']
     ])
   ];
+
+  /* Ilustração do pica-pau de cada categoria (img/categorias). */
+  categories.forEach((c) => { c.art = `img/categorias/${c.id}.webp`; });
 
   /* rating = média desejada das avaliações · n = trabalhos de exemplo gerados no banco · factor = ajuste de preço
      bearing/km = posição relativa ao cliente · wait = minutos até ficar livre · pitch = frase de apresentação (usada no chat)
@@ -136,7 +146,9 @@
     P('p26', 'Simone Guedes', 'eletrodomesticos', 4.8, 33, 0.95, 200, 2.8, 2018, 0, 'Eu conserto sua máquina de lavar e seu micro-ondas em casa', 'Técnica em eletrodomésticos: lavadoras, lava e seca, micro-ondas e lava-louças. Orçamento sem compromisso.', [2, 2, 3], [[2, 0, 0]]),
     P('p27', 'Jorge Amaral', 'eletrodomesticos', 4.7, 19, 0.9, 320, 4.4, 2021, 20, 'Eu faço a manutenção do seu fogão, da sua geladeira e da sua lavadora', 'Assistência multimarcas para a linha branca. Atendo fogões, geladeiras e máquinas de lavar.', [4, 0, 2], [[0, 0, 5]]),
     P('p28', 'Vitor Nakamura', 'eletronicos', 4.9, 37, 1.05, 130, 1.8, 2016, 0, 'Eu conserto sua TV e seu videogame', 'Técnico em eletrônica: TVs de LED, placas e videogames. Bancada própria e garantia no reparo.', [0, 0, 2]),
-    P('p29', 'Aline Rezende', 'eletronicos', 4.8, 21, 0.95, 280, 3.6, 2020, 15, 'Eu troco a tela e a bateria do seu celular na hora', 'Assistência técnica de celulares e áudio. Troca de tela, bateria e conector com peças de qualidade.', [1, 1, 3])
+    P('p29', 'Aline Rezende', 'eletronicos', 4.8, 21, 0.95, 280, 3.6, 2020, 15, 'Eu troco a tela e a bateria do seu celular na hora', 'Assistência técnica de celulares e áudio. Troca de tela, bateria e conector com peças de qualidade.', [1, 1, 3]),
+    P('p30', 'Marcelo Fontes', 'piscina', 4.9, 31, 1.0, 100, 2.3, 2015, 0, 'Eu deixo a água da sua piscina cristalina de novo', 'Piscineiro de casas e condomínios: limpeza, aspiração, tratamento de água verde e manutenção de filtros e bombas.', [0, 0, 1]),
+    P('p31', 'Tatiane Brito', 'piscina', 4.8, 17, 0.95, 265, 3.8, 2020, 25, 'Eu cuido da sua piscina toda semana, com análise da água em cada visita', 'Manutenção semanal de piscinas residenciais e de condomínio, com medição de pH e cloro a cada visita.', [0])
   ];
 
   /* O profissional que o usuário assume no modo profissional. */
@@ -174,7 +186,8 @@
     jardinagem: [['Jardinagem e paisagismo', 'SENAR', '80 h'], ['Poda de árvores urbanas', 'SENAR', '24 h'], ['Hortas urbanas', 'SENAR', '16 h']],
     frete: [['Direção defensiva', 'SEST SENAT', '20 h'], ['Movimentação e transporte de cargas', 'SEST SENAT', '40 h']],
     beleza: [['Cabeleireiro', 'SENAC', '400 h'], ['Maquiagem profissional', 'SENAC', '80 h'], ['Biossegurança em serviços de beleza', 'SENAC', '20 h']],
-    reformas: [['Pedreiro de alvenaria', 'SENAI', '200 h'], ['Assentador de revestimentos', 'SENAI', '120 h'], ['Montador de drywall', 'SENAI', '80 h'], ['NR-35 · Trabalho em altura', 'SENAI', '8 h']]
+    reformas: [['Pedreiro de alvenaria', 'SENAI', '200 h'], ['Assentador de revestimentos', 'SENAI', '120 h'], ['Montador de drywall', 'SENAI', '80 h'], ['NR-35 · Trabalho em altura', 'SENAI', '8 h']],
+    piscina: [['Tratamento de água de piscinas', 'SENAC', '40 h'], ['Manutenção de bombas e filtros', 'SENAI', '32 h'], ['Manuseio seguro de produtos químicos', 'SENAI', '16 h'], ['NR-10 · Segurança em eletricidade', 'SENAI', '40 h']]
   };
 
   /* Especialidades que completam as mais frequentes do histórico de cada profissional. */
@@ -185,7 +198,8 @@
     eletronicos: ['Placas e microssoldagem', 'Telas e baterias', 'Consoles'], informatica: ['Recuperação de dados', 'Redes Wi-Fi', 'Home office'],
     pintor: ['Acabamento fino', 'Texturas', 'Tratamento de mofo'], chaveiro: ['Abertura sem danos', 'Fechaduras digitais', 'Chaves codificadas'],
     jardinagem: ['Paisagismo', 'Hortas', 'Poda'], frete: ['Van fechada', 'Pequenas mudanças', 'Montagem no destino'],
-    beleza: ['Atendimento em domicílio', 'Noivas e festas', 'Material esterilizado'], reformas: ['Pequenos reparos', 'Revestimentos', 'Drywall']
+    beleza: ['Atendimento em domicílio', 'Noivas e festas', 'Material esterilizado'], reformas: ['Pequenos reparos', 'Revestimentos', 'Drywall'],
+    piscina: ['Água verde', 'Filtros e bombas', 'Manutenção semanal']
   };
 
   const pickCourses = (cat, seed, since, count) => {

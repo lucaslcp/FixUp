@@ -435,6 +435,14 @@ button.row:hover, .method:hover { background: var(--tint-2); }
 .cat-ic.alt { background: var(--tint); box-shadow: none; }
 .cat-ic .ic { width: 25px; height: 25px; stroke-width: 1.9; }
 .cat:hover .cat-ic { background: var(--primary); color: #fff; transform: translateY(-2px); }
+/* Ilustrações do pica-pau (img/categorias): o desenho ocupa o bloco inteiro. */
+.cat-ic.art { width: 100%; max-width: 84px; height: auto; aspect-ratio: 1; border-radius: 22px; overflow: hidden; }
+.cat-ic.alt { width: 100%; max-width: 84px; height: auto; aspect-ratio: 1; border-radius: 22px; }
+.cat-art { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; user-select: none; }
+.cat:hover .cat-ic.art { background: var(--tint); }
+.cat:hover .cat-art { transform: scale(1.06); }
+.cat-art { transition: transform .2s; }
+@media (prefers-reduced-motion: reduce) { .cat-art { transition: none; } .cat:hover .cat-art { transform: none; } }
 
 .trust { width: 100%; display: flex; gap: 14px; align-items: center; padding: 16px; border-radius: var(--r-lg); background: var(--grad-deep); color: #fff; text-align: left; }
 .trust-ic { width: 46px; height: 46px; flex: none; border-radius: 14px; background: rgba(255, 255, 255, .14); display: grid; place-items: center; }

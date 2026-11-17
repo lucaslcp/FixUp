@@ -30,7 +30,7 @@
 (function (S) {
   'use strict';
 
-  const DB_NAME = 'fixup', DB_VERSION = 2, SEED_VERSION = 2;
+  const DB_NAME = 'fixup', DB_VERSION = 2, SEED_VERSION = 3;
   const DAY = 864e5, HOUR = 36e5;
 
   /* =====================================================================
@@ -337,6 +337,22 @@
         ['Reparo de goteira', 'Goteira no telhado quando chove forte.', 220, 150],
         ['Impermeabilização de laje', 'Infiltração na laje, teto do quarto com mofo.', 540, 360],
         ['Limpeza de calhas', 'Calhas entupidas com folhas e a água transbordando.', 140, 90]
+      ])
+    ],
+
+    piscina: [
+      G('Limpeza e tratamento', 'piscina', null, [
+        ['Limpeza e aspiração de piscina', 'Piscina com folhas no fundo e a borda suja, precisa aspirar e escovar.', 130, 90],
+        ['Tratamento de água verde', 'A água da piscina ficou verde depois das chuvas, cheia de algas.', 240, 180],
+        ['Correção de pH e cloro', 'Água da piscina turva e ardendo nos olhos.', 90, 45],
+        ['Manutenção semanal de piscina', 'Cuidar da piscina toda semana: peneirar, aspirar e acertar o cloro e o pH.', 110, 60],
+        ['Limpeza de borda e azulejos', 'Borda e azulejos da piscina com marca de gordura e limo.', 160, 120],
+        ['Esvaziamento e lavagem da piscina', 'Esvaziar, lavar e encher a piscina de novo antes do verão.', 420, 360]
+      ]),
+      G('Filtro e bomba', 'piscina', ['Dancor', 'Sodramar', 'Jacuzzi', 'Nautilus'], [
+        ['Troca da areia do filtro', 'O filtro da piscina não segura a sujeira e a água volta turva.', 280, 150],
+        ['Conserto da bomba da piscina', 'A bomba da piscina faz barulho e não puxa a água.', 220, 90],
+        ['Vazamento na casa de máquinas', 'Pingando água no registro e nos canos da casa de máquinas da piscina.', 190, 90]
       ])
     ]
   };

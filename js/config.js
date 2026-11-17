@@ -10,7 +10,7 @@
 
   S.config = {
     appName: 'FixUp',
-    version: '3.0.0',
+    version: '3.1.0',
     embedded,
 
     /** Parte da plataforma em cada serviço concluído (0.08 = 8%). Não há mensalidade.
@@ -65,6 +65,14 @@
 
     /** Notas de atualização mostradas em Perfil > Novidades (o histórico completo fica no CHANGELOG.md). */
     releases: [
+      {
+        v: '3.1.0', date: '17 nov 2026', title: 'Pica-pau nas categorias e limpeza de piscina',
+        notes: [
+          'Os ícones das categorias viraram ilustrações do pica-pau fazendo cada serviço.',
+          'Nova categoria Piscina: limpeza e aspiração, água verde, pH e cloro, filtro e bomba, com dois profissionais.',
+          'A busca entende pedidos como "piscina com água verde" e "bomba da piscina fazendo barulho".'
+        ]
+      },
       {
         v: '3.0.0', date: '17 nov 2026', title: 'Segurança, perfil profissional, preço cego e comprovantes',
         notes: [

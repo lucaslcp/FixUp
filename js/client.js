@@ -139,7 +139,7 @@
      ===================================================================== */
 
   const EXAMPLES = ['Geladeira não liga', 'Chuveiro queimou', 'Torneira pingando', 'Notebook lento', 'Montar guarda-roupa'];
-  const catTile = (c) => `<button class="cat" data-go="/search?cat=${c.id}"><span class="cat-ic">${icon(c.icon)}</span><span>${esc(c.short)}</span></button>`;
+  const catTile = (c) => `<button class="cat" data-go="/search?cat=${c.id}"><span class="cat-ic${c.art ? ' art' : ''}">${ui.catArt(c)}</span><span>${esc(c.short)}</span></button>`;
 
   function activeBanner(o) {
     const pro = S.data.pro(o.proId), t = trackTexts(o, S.sim.live(o.id));

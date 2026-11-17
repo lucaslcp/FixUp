@@ -104,6 +104,14 @@ em `ferramentas/logo`. Para trocar o logo:
 A ferramenta usa o potrace para transformar cada peça em vetor e o resvg para gerar os PNGs. As linhas-guia da casa e a posição
 das faíscas estão no início de `gerar.js`; se o desenho do logo mudar, ajuste essas medidas.
 
+### Ilustrações das categorias
+
+Cada categoria tem uma ilustração do pica-pau fazendo o serviço (`img/categorias/<categoria>.webp`,
+188 x 188 px, fundo transparente). Elas são recortadas da arte "Todas as categorias"
+(`ferramentas/categorias/categorias-original.webp`) pela ferramenta da mesma pasta, que também monta
+o ícone de piscina a partir do pica-pau da limpeza. Para gerar de novo: na pasta `ferramentas/categorias`,
+rode `npm install` (só na primeira vez) e depois `npm run gerar`.
+
 ## Segurança da conta
 
 O código fica em `js/seguranca.js` (regras) e `js/conta.js` (tela). Os limites ficam em
@@ -234,7 +242,9 @@ css/styles.css        identidade visual (paleta FixUp, temas claro e escuro, abe
 img/abertura.svg      abertura animada do logo
 img/logo-fixup.svg    logo em vetor (ícone da aba e marca)
 img/icone-*.png       ícones da tela inicial do iPhone e da prévia do link
+img/categorias/       ilustrações do pica-pau de cada categoria (WebP)
 ferramentas/logo      gera os SVGs e os ícones a partir do PNG do logo (npm run gerar)
+ferramentas/categorias gera as ilustrações das categorias a partir da arte (npm run gerar)
 css/leaflet-core.css  regras essenciais do mapa para a versão publicada
 js/config.js          versão, comissão, taxas, provedores de mapa e notas de atualização
 js/geo.js             GPS, distâncias, rotas e endereço

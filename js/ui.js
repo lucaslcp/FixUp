@@ -84,6 +84,9 @@
   };
 
   /** Selo de conta verificada, com o pica-pau. */
+  /** Ilustração do pica-pau da categoria (ou o ícone de linha, se a categoria não tiver ilustração). */
+  ui.catArt = (c) => (c.art ? `<img class="cat-art" src="${c.art}" alt="" loading="lazy" decoding="async" draggable="false">` : ui.icon(c.icon));
+
   ui.verified = (size) => `<span class="pp-verified" title="Profissional Verificado FixUp" aria-label="Profissional Verificado FixUp">${ui.mascot('badge', size || 16)}</span>`;
   /** Indicador de carregamento: o pica-pau bicando. */
   ui.loader = (size) => `<span class="pp-loading" role="status" aria-label="Carregando">${ui.mascot('loader', size || 44)}</span>`;

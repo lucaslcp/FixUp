@@ -1,0 +1,11 @@
+{
+  "name": "fixup-categorias",
+  "private": true,
+  "description": "Gera as ilustrações das categorias do FixUp (img/categorias) a partir da arte com o pica-pau.",
+  "scripts": {
+    "gerar": "node gerar.js"
+  },
+  "devDependencies": {
+    "sharp": "0.34.3"
+  }
+}

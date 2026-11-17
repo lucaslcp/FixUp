@@ -77,6 +77,8 @@
   D('poda', 'Poda', 'jardinagem', 'poda|arvore|arbusto|cerca viva|galho');
   D('jardim', 'Jardim e plantas', 'jardinagem', 'jardim|canteiro|horta|planta|paisagismo|jardim vertical|adubo|adubacao|plantio|jardineira');
 
+  D('piscina', 'Piscina', 'piscina', 'piscina|piscinas|spa|ofuro|hidromassagem|jacuzzi|prainha', { cw: 2.5 });
+
   D('cabelo', 'Cabelo', 'beleza', 'cabelo|corte de cabelo|escova|hidratacao|progressiva|tintura|mechas|coloracao|penteado');
   D('barba', 'Barba', 'beleza', 'barba|bigode|degrade');
   D('unha', 'Unhas', 'beleza', 'unha|manicure|pedicure|esmaltacao|alongamento de unha');
@@ -97,6 +99,7 @@
   P('resistencia', 'Resistência', 'eletricista eletrodomesticos', 'resistencia', { cw: 0.6 });
   P('motor', 'Motor / ventoinha', 'eletrodomesticos informatica eletronicos', 'motor|motor ventilador|ventoinha|cooler|helice|pasta termica', { cw: 0.3 });
   P('bomba', 'Bomba de água', 'eletrodomesticos encanador', 'bomba|bomba de drenagem|bomba d agua|eletrobomba|pressurizador', { cw: 0.5 });
+  P('filtropiscina', 'Filtro e bomba da piscina', 'piscina', 'filtro da piscina|bomba da piscina|areia do filtro|pre filtro|skimmer|dispositivo de retorno|ralo de fundo|clorador|casa de maquinas', { cw: 2 });
   P('correia', 'Correia / rolamento', 'eletrodomesticos', 'correia|rolamento|retentor|tambor|cesto|agitador|amortecedor');
   P('valvula', 'Válvula / mangueira', 'eletrodomesticos encanador', 'mangueira|valvula|valvula de entrada|pressostato', { cw: 0.5 });
   P('magnetron', 'Componentes eletrônicos', 'eletrodomesticos eletronicos', 'magnetron|capacitor|diodo|fusivel|transformador|membrana', { cw: 0.8 });
@@ -129,6 +132,7 @@
   Y('naocentrifuga', 'Não centrifuga / não enche', 'eletrodomesticos', 'nao centrifuga|nao bate|nao gira|nao enche|nao drena|nao solta agua|nao escoa', { cw: 1.5 });
   Y('semsinal', 'Sem sinal / sem imagem', 'eletronicos informatica', 'sem sinal|sem internet|nao conecta|sem imagem|sem som|tela preta|listras|cai toda hora', { cw: 0.6 });
   Y('sujo', 'Sujeira / mau cheiro', 'limpeza', 'sujo|mau cheiro|cheiro ruim|mancha|encardido', { cw: 0.5 });
+  Y('aguaverde', 'Água verde ou turva', 'piscina', 'agua verde|agua turva|agua leitosa|agua esverdeada|alga|algas|limo|lodo', { cw: 1.5 });
   Y('desregulado', 'Desregulado / solto', '', 'desregulado|frouxo|solto|folga|bambo|desalinhado|torto|saindo do trilho');
 
   /* ---------- Ações ---------- */
@@ -146,6 +150,7 @@
   A('pintura', 'Pintura', 'pintor', 'pintar|pintura|repintura|repintar|pintor|demao', ONLY);
   A('frete', 'Frete e mudança', 'frete', 'mudanca|carreto|frete|transportar|transporte|descarregar|caminhao|ajudante|van', ONLY);
   A('jardinagem', 'Jardinagem', 'jardinagem', 'jardineiro|jardinagem|paisagista', STRONG);
+  A('piscineiro', 'Piscineiro', 'piscina', 'piscineiro|limpeza de piscina|limpar piscina|limpar a piscina|tratamento de piscina|tratar piscina|tratar a piscina|aspirar piscina|aspirar a piscina|aspiracao|cloro|clorar|algicida|decantar|decantacao', STRONG);
   A('abertura', 'Abertura de porta ou carro', 'chaveiro', 'chaveiro|abrir porta|abertura de porta|abrir a porta|abertura de carro|trancado|tranquei|chave quebrou', STRONG);
   A('eletricista', 'Eletricista', 'eletricista', 'eletricista', STRONG);
   A('encanador', 'Encanador', 'encanador', 'encanador|bombeiro hidraulico|caca vazamento|hidraulica', STRONG);
@@ -173,6 +178,7 @@
   B('asus', 'Asus'); B('hp', 'HP'); B('positivo', 'Positivo'); B('motorola', 'Motorola'); B('xiaomi', 'Xiaomi', 'xiaomi|redmi');
   B('sony', 'Sony'); B('tcl', 'TCL'); B('aoc', 'AOC'); B('springer', 'Springer'); B('gree', 'Gree'); B('elgin', 'Elgin');
   B('fujitsu', 'Fujitsu'); B('daikin', 'Daikin'); B('tplink', 'TP-Link', 'tp link|tplink'); B('multilaser', 'Multilaser');
+  B('dancor', 'Dancor'); B('sodramar', 'Sodramar'); B('nautilus', 'Nautilus');
   B('epson', 'Epson'); B('canon', 'Canon'); B('brother', 'Brother'); B('jbl', 'JBL'); B('madesa', 'Madesa'); B('henn', 'Henn');
   B('moval', 'Moval'); B('politorno', 'Politorno'); B('artely', 'Artely'); B('mobly', 'Mobly'); B('siemens', 'Siemens');
   B('schneider', 'Schneider'); B('steck', 'Steck'); B('weg', 'WEG');
