@@ -4,6 +4,13 @@ Todas as mudanças do FixUp, da mais recente para a mais antiga.
 As versões seguem o formato `MAIOR.MENOR.CORREÇÃO`: o primeiro número muda quando o app muda de forma
 grande, o segundo quando ganha recursos novos e o terceiro quando só há correções.
 
+## 3.3.3 — 17 de novembro de 2026
+
+### Corrigido
+
+- No bloco "Quem já resolveu um caso como o seu", a lupa ficava por cima do bico do pica-pau. Ela desceu
+  para a frente do peito, logo abaixo do bico, que agora aparece inteiro.
+
 ## 3.3.2 — 17 de novembro de 2026
 
 ### Mudou

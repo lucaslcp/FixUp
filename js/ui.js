@@ -105,7 +105,7 @@
      at = posição do símbolo no desenho; extra = traços desenhados direto no desenho (linhas de velocidade). */
   const CORNER = 'translate(250 262) scale(3.1)';
   const TILE_GLYPH = {
-    check: { at: 'translate(252 136) scale(3.3)', g: '<path d="M9 15 3.6 20.4" fill="none" stroke-width="3.6" stroke-linecap="round"/><circle cx="14" cy="10" r="6.6" stroke-width="2.6" class="glass"/><path d="M11.1 10.2l2 2 4-4.1" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cut"/>' },
+    check: { at: 'translate(256 202) scale(3.2)', g: '<path d="M9 15 3.6 20.4" fill="none" stroke-width="3.6" stroke-linecap="round"/><circle cx="14" cy="10" r="6.6" stroke-width="2.6" class="glass"/><path d="M11.1 10.2l2 2 4-4.1" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cut"/>' },
     briefcase: { at: CORNER, g: '<path d="M8.5 7V5.2A2.2 2.2 0 0 1 10.7 3h2.6a2.2 2.2 0 0 1 2.2 2.2V7" fill="none" stroke-width="2.2" stroke-linecap="round"/><rect x="2.5" y="7" width="19" height="14" rx="2.6"/><path d="M2.5 13.2h19" fill="none" stroke-width="1.5" class="cut"/><rect x="6.6" y="11.6" width="2.4" height="3.2" rx=".6" class="cut-fill"/><rect x="15" y="11.6" width="2.4" height="3.2" rx=".6" class="cut-fill"/>' },
     bolt: { at: CORNER, g: '<path d="M14.2 1.6 4.4 13.6h6.6l-1.6 8.8 10-12.4h-6.8z" stroke-width="1" stroke-linejoin="round"/>',
       extra: '<path d="M86 214h40" stroke-width="8" opacity=".9"/><path d="M80 236h30" stroke-width="8" opacity=".7"/><path d="M90 258h22" stroke-width="8" opacity=".5"/>' },
