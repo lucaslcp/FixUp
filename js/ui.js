@@ -99,37 +99,45 @@
   /** Ilustração do pica-pau da categoria (ou o ícone de linha, se a categoria não tiver ilustração). */
   ui.catArt = (c) => (c.art ? `<img class="cat-art" src="${c.art}" alt="" loading="lazy" decoding="async" draggable="false">` : ui.icon(c.icon));
 
-  /* Símbolos dos blocos de destaque: a cabeça do pica-pau em contorno e um símbolo branco no canto.
-     Os símbolos usam a grade de 24 dos ícones de linha; cut = recorte azul-marinho dentro do símbolo. */
+  /* Símbolos dos blocos de destaque: o pica-pau sólido (o mesmo desenho do logo, sem contorno e sem
+     quadrado de fundo) com um símbolo branco. A parte de baixo do corpo se desfaz na cor da barra.
+     Os símbolos usam a grade de 24 dos ícones de linha; cut = detalhe na cor do pássaro.
+     at = posição do símbolo no desenho; extra = traços desenhados direto no desenho (linhas de velocidade). */
+  const CORNER = 'translate(250 262) scale(3.1)';
   const TILE_GLYPH = {
-    briefcase: '<path d="M8.5 7V5.2A2.2 2.2 0 0 1 10.7 3h2.6a2.2 2.2 0 0 1 2.2 2.2V7" fill="none" stroke-width="2.2" stroke-linecap="round"/><rect x="2.5" y="7" width="19" height="14" rx="2.6"/><path d="M2.5 13.2h19" fill="none" stroke-width="1.5" class="cut"/><rect x="6.6" y="11.6" width="2.4" height="3.2" rx=".6" class="cut-fill"/><rect x="15" y="11.6" width="2.4" height="3.2" rx=".6" class="cut-fill"/>',
-    pin: '<path d="M12 22.5s-7.5-6.4-7.5-12.6a7.5 7.5 0 0 1 15 0c0 6.2-7.5 12.6-7.5 12.6z"/><circle cx="12" cy="9.9" r="2.8" class="cut-fill"/>',
-    search: '<circle cx="10.2" cy="10.2" r="6.6" fill="none" stroke-width="3"/><path d="M15.2 15.2 21 21" fill="none" stroke-width="3.4" stroke-linecap="round"/>',
-    user: '<circle cx="12" cy="7.6" r="4.6"/><path d="M3.5 21.5a8.5 8.5 0 0 1 17 0z"/>',
-    calendar: '<path d="M7.6 2.6v4M16.4 2.6v4" fill="none" stroke-width="2.4" stroke-linecap="round"/><rect x="2.8" y="4.6" width="18.4" height="17" rx="2.8"/><path d="M2.8 9.6h18.4" fill="none" stroke-width="1.6" class="cut"/><rect x="5.6" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="10.3" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="15" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="5.6" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="10.3" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="15" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/>',
-    shield: '<path d="M12 2.4 4.2 5.4v6.2c0 5.1 3.4 8.8 7.8 10.2 4.4-1.4 7.8-5.1 7.8-10.2V5.4z"/><path d="M8.4 12.2l2.6 2.6 4.8-5" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="cut"/>'
+    check: { at: 'translate(252 136) scale(3.3)', g: '<path d="M9 15 3.6 20.4" fill="none" stroke-width="3.6" stroke-linecap="round"/><circle cx="14" cy="10" r="6.6" stroke-width="2.6" class="glass"/><path d="M11.1 10.2l2 2 4-4.1" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="cut"/>' },
+    briefcase: { at: CORNER, g: '<path d="M8.5 7V5.2A2.2 2.2 0 0 1 10.7 3h2.6a2.2 2.2 0 0 1 2.2 2.2V7" fill="none" stroke-width="2.2" stroke-linecap="round"/><rect x="2.5" y="7" width="19" height="14" rx="2.6"/><path d="M2.5 13.2h19" fill="none" stroke-width="1.5" class="cut"/><rect x="6.6" y="11.6" width="2.4" height="3.2" rx=".6" class="cut-fill"/><rect x="15" y="11.6" width="2.4" height="3.2" rx=".6" class="cut-fill"/>' },
+    bolt: { at: CORNER, g: '<path d="M14.2 1.6 4.4 13.6h6.6l-1.6 8.8 10-12.4h-6.8z" stroke-width="1" stroke-linejoin="round"/>',
+      extra: '<path d="M86 214h40" stroke-width="8" opacity=".9"/><path d="M80 236h30" stroke-width="8" opacity=".7"/><path d="M90 258h22" stroke-width="8" opacity=".5"/>' },
+    user: { at: CORNER, g: '<circle cx="12" cy="7.6" r="4.6"/><path d="M3.5 21.5a8.5 8.5 0 0 1 17 0z"/>' },
+    calendar: { at: CORNER, g: '<path d="M7.6 2.6v4M16.4 2.6v4" fill="none" stroke-width="2.4" stroke-linecap="round"/><rect x="2.8" y="4.6" width="18.4" height="17" rx="2.8"/><path d="M2.8 9.6h18.4" fill="none" stroke-width="1.6" class="cut"/><rect x="5.6" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="10.3" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="15" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="5.6" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="10.3" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="15" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/>' },
+    shield: { at: CORNER, g: '<path d="M12 2.4 4.2 5.4v6.2c0 5.1 3.4 8.8 7.8 10.2 4.4-1.4 7.8-5.1 7.8-10.2V5.4z"/><path d="M8.4 12.2l2.6 2.6 4.8-5" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="cut"/>' }
   };
-  const TILE_BOX = 'x="92" y="100" width="228" height="228"', TILE_AT = 'translate(236 244) scale(3.15)';
+  const TILE_BOX = 'x="80" y="95" width="250" height="250"';
   const tileGlyph = {};
   Object.keys(TILE_GLYPH).forEach((k) => {
-    const g = TILE_GLYPH[k];
+    const t = TILE_GLYPH[k], wider = (s, d) => s.replace(/stroke-width="([\d.]+)"/g, (m, w) => `stroke-width="${+w + d}"`);
     tileGlyph[k] = {
-      /* a mesma forma, mais larga: abre um respiro no pássaro em volta do símbolo */
-      gap: g.replace(/ class="cut(-fill)?"/g, '').replace(/stroke-width="([\d.]+)"/g, (m, w) => `stroke-width="${+w + 5.4}"`),
-      art: g.replace(/class="cut"/g, 'class="ppt-cut"').replace(/class="cut-fill"/g, 'class="ppt-cut-fill"')
+      at: t.at,
+      /* a mesma forma, mais larga, abre um respiro no pássaro em volta do símbolo */
+      gap: wider(t.g.replace(/ class="[a-z-]+"/g, ''), 5),
+      gapExtra: t.extra ? wider(t.extra.replace(/ opacity="[.\d]+"/g, ''), 10) : '',
+      art: t.g.replace(/class="cut"/g, 'class="ppt-cut"').replace(/class="cut-fill"/g, 'class="ppt-cut-fill"').replace(/class="glass"/g, 'class="ppt-glass"'),
+      extra: t.extra || ''
     };
   });
   let tileSeq = 0;
-  /** Quadrado com o pica-pau e um símbolo no canto: briefcase, pin, search, user, calendar ou shield.
-      O traço é um azul-marinho translúcido, para a cor da barra aparecer através do desenho. */
+  /** Pica-pau com um símbolo: check (lupa), briefcase, bolt, user, calendar ou shield. */
   ui.ppTile = (glyph) => {
     const t = tileGlyph[glyph];
-    if (!S.mascotArt || !t) return ui.icon(glyph === 'pin' ? 'map-pin' : glyph);
+    if (!S.mascotArt || !t) return ui.icon(glyph);
     const id = 'fx-ppt-' + (++tileSeq);
-    return `<svg class="pp-tile" viewBox="92 100 228 228" aria-hidden="true">
-      <mask id="${id}" maskUnits="userSpaceOnUse" ${TILE_BOX}><rect ${TILE_BOX} fill="#fff"/><g transform="${TILE_AT}" fill="#000" stroke="#000" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">${t.gap}</g></mask>
-      <g mask="url(#${id})"><use href="#fx-pp-n" class="ppt-fill"/><g class="ppt-lines"><use href="#fx-pp-n" class="ppt-line"/></g><use href="#fx-pp-w" class="ppt-w"/></g>
-      <g transform="${TILE_AT}" class="ppt-glyph">${t.art}</g>
+    return `<svg class="pp-tile" viewBox="80 95 250 250" aria-hidden="true">
+      <linearGradient id="${id}f" x1="0" y1="0" x2="0" y2="1"><stop offset=".7" stop-color="#fff"/><stop offset="1" stop-color="#000"/></linearGradient>
+      <mask id="${id}" maskUnits="userSpaceOnUse" ${TILE_BOX}><rect ${TILE_BOX} fill="url(#${id}f)"/><g fill="#000" stroke="#000" stroke-linejoin="round" stroke-linecap="round"><g transform="${t.at}">${t.gap}</g>${t.gapExtra ? `<g fill="none">${t.gapExtra}</g>` : ''}</g></mask>
+      <g mask="url(#${id})"><use href="#fx-pp-n" class="ppt-body"/><use href="#fx-pp-w" class="ppt-w"/></g>
+      <g transform="${t.at}" class="ppt-glyph">${t.art}</g>
+      ${t.extra ? `<g class="ppt-speed">${t.extra}</g>` : ''}
     </svg>`;
   };
 

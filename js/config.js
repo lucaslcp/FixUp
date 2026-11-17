@@ -10,7 +10,7 @@
 
   S.config = {
     appName: 'FixUp',
-    version: '3.3.1',
+    version: '3.3.2',
     embedded,
 
     /** Parte da plataforma em cada serviço concluído (0.08 = 8%). Não há mensalidade.
@@ -65,6 +65,13 @@
 
     /** Notas de atualização mostradas em Perfil > Novidades (o histórico completo fica no CHANGELOG.md). */
     releases: [
+      {
+        v: '3.3.2', date: '17 nov 2026', title: 'Novos símbolos do pica-pau',
+        notes: [
+          'Os símbolos dos blocos azuis foram refeitos: pica-pau sólido, sem contorno e sem quadrado de fundo, com lupa e certinho na busca e raio com linhas de velocidade em Chamar o mais próximo.',
+          'O bloco Seguro e confiável foi para o fim da tela inicial, num tamanho menor.'
+        ]
+      },
       {
         v: '3.3.1', date: '17 nov 2026', title: 'Pica-pau mais suave nos blocos azuis',
         notes: [

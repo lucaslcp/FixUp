@@ -4,6 +4,21 @@ Todas as mudanças do FixUp, da mais recente para a mais antiga.
 As versões seguem o formato `MAIOR.MENOR.CORREÇÃO`: o primeiro número muda quando o app muda de forma
 grande, o segundo quando ganha recursos novos e o terceiro quando só há correções.
 
+## 3.3.2 — 17 de novembro de 2026
+
+### Mudou
+
+- **Novos símbolos do pica-pau** nos blocos azuis, a partir da nova referência da equipe: o pássaro
+  agora é sólido (o desenho do logo, sem contorno) e não tem mais o quadrado de fundo. A parte de baixo
+  do corpo se desfaz na cor da barra.
+  - "Quem já resolveu um caso como o seu": lupa com um certinho, perto do bico;
+  - "Chamar o mais próximo": raio, com linhas de velocidade;
+  - "Você presta serviços?": maleta; "Voltar para o modo cliente": pessoa;
+  - "Agendamentos": calendário; "Seguro e confiável": escudo.
+- **"Seguro e confiável" foi para o fim da tela inicial**, num tamanho menor, no lugar do aviso de
+  pagamento protegido (que agora está no texto do bloco e na janela que ele abre). "Agendamentos"
+  ficou sozinho, na largura toda, logo abaixo de "Quem já resolveu um caso como o seu".
+
 ## 3.3.1 — 17 de novembro de 2026
 
 ### Mudou

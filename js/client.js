@@ -184,24 +184,17 @@
 
         <section class="section">
           <button class="trust" data-go="/search?focus=1">
-            <span class="trust-ic art">${ui.ppTile('search')}</span>
+            <span class="trust-ic art">${ui.ppTile('check')}</span>
             <span class="trust-text"><strong>Quem já resolveu um caso como o seu</strong><span>Descreva o problema com suas palavras. A busca compara com os trabalhos já realizados por cada profissional.</span></span>
           </button>
         </section>
 
         <section class="section">
-          <div class="feature-grid">
-            <button class="feature light" data-go="/schedule">
-              <span class="feature-ic art">${ui.ppTile('calendar')}</span>
-              <span class="feature-text"><strong>Agendamentos</strong><span>${next ? 'Próximo: ' + esc(ui.when(next.scheduledFor)) : 'Marque seu serviço'}</span></span>
-              ${icon('chevron-right')}
-            </button>
-            <button class="feature deep" data-action="open-safety">
-              <span class="feature-ic art">${ui.ppTile('shield')}</span>
-              <span class="feature-text"><strong>Seguro e confiável</strong><span>Serviços verificados</span></span>
-              ${icon('chevron-right')}
-            </button>
-          </div>
+          <button class="feature light" data-go="/schedule">
+            <span class="feature-ic art">${ui.ppTile('calendar')}</span>
+            <span class="feature-text"><strong>Agendamentos</strong><span>${next ? 'Próximo: ' + esc(ui.when(next.scheduledFor)) : 'Marque seu serviço'}</span></span>
+            ${icon('chevron-right')}
+          </button>
         </section>
 
         <section class="section">
@@ -216,7 +209,11 @@
         </section>
 
         <section class="section">
-          <div class="note">${icon('shield-check')}<span><strong>Pagamento protegido.</strong> Você paga pelo app e o valor só é liberado ao profissional quando o serviço for concluído.</span></div>
+          <button class="feature deep small" data-action="open-safety">
+            <span class="feature-ic art">${ui.ppTile('shield')}</span>
+            <span class="feature-text"><strong>Seguro e confiável</strong><span>Profissionais verificados e pagamento protegido</span></span>
+            ${icon('chevron-right')}
+          </button>
         </section>
         <div class="spacer"></div>`;
     },
@@ -369,7 +366,7 @@
       const where = sv.cat ? 'em ' + esc(plain(S.data.cat(sv.cat).short)) : 'perto de você';
       return `${sv.cat ? '' : examples}${sortbar}
         <button class="quick" data-action="quick-match">
-          <span class="quick-ic art">${ui.ppTile('pin')}</span>
+          <span class="quick-ic art">${ui.ppTile('bolt')}</span>
           <span class="quick-text"><strong>Chamar o mais próximo</strong><small>Encontramos o melhor profissional disponível agora</small></span>
           ${icon('chevron-right')}
         </button>
