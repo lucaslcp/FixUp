@@ -20,6 +20,14 @@
     pro: [['pro', '/pro', 'house', 'Início'], ['pchats', '/pro/chats', 'message-circle', 'Conversas'], ['earnings', '/pro/earnings', 'banknote', 'Ganhos'], ['profile', '/profile', 'user', 'Perfil']]
   };
 
+  /* Telas internas: qual item da navegação fica destacado na barra lateral. */
+  const PARENT = {
+    proProfile: 'search', checkout: 'search', chat: 'chats', track: 'orders', receipt: 'orders', wallet: 'profile', account: 'profile',
+    proChat: 'pchats', proEdit: 'profile'
+  };
+  const THEME_ICON = { auto: 'sun-moon', light: 'sun', dark: 'moon' };
+  const THEME_NAME = { auto: 'automático', light: 'claro', dark: 'escuro' };
+
   let current = null, cleanup = null, depth = 0, ready = false;
 
   /* Na versão publicada a rota fica em memória (o endereço da página não pode ser alterado);
@@ -54,33 +62,28 @@
     return null;
   }
 
-  function renderTabs(active) {
-    const bar = document.getElementById('tabbar');
+  /* Navegação: barra inferior no celular e barra lateral em telas largas (o CSS decide a forma).
+     No celular as telas internas escondem a barra; na lateral ela fica sempre visível. */
+  function renderTabs(active, parent) {
+    const bar = document.getElementById('tabbar'), mode = state().mode, on = active || parent, pref = S.theme.pref();
     bar.hidden = !active;
-    if (!active) return;
-    const live = state().mode === 'client' && S.orders.active();
+    const live = mode === 'client' && S.orders.active();
     const unread = S.chat.unread();
     const dot = (id) => ((id === 'orders' && live) || ((id === 'chats' || id === 'pchats') && unread) ? '<i class="tab-dot"></i>' : '');
-    bar.innerHTML = TABS[state().mode].map(([id, path, ic, label]) =>
-      `<button class="tab${id === active ? ' active' : ''}" data-go="${path}">${ui.icon(ic)}<span>${label}</span>${dot(id)}</button>`).join('');
+    bar.innerHTML = `
+      <div class="nav-brand"><img src="img/logo-fixup.svg" width="46" height="45" alt=""><span>FixUp</span></div>
+      <div class="nav-items">${TABS[mode].map(([id, path, ic, label]) =>
+        `<button class="tab${id === on ? ' active' : ''}" data-go="${path}"${id === on ? ' aria-current="page"' : ''}>${ui.icon(ic)}<span>${label}</span>${dot(id)}</button>`).join('')}</div>
+      <div class="nav-foot">
+        <button class="tab" data-action="set-mode" data-arg="${mode === 'pro' ? 'client' : 'pro'}" title="${mode === 'pro' ? 'Voltar para o modo cliente' : 'Mudar para o modo profissional'}">${ui.icon(mode === 'pro' ? 'user' : 'briefcase')}<span>${mode === 'pro' ? 'Modo cliente' : 'Modo profissional'}</span></button>
+        <button class="tab" data-action="cycle-theme" title="Tema ${THEME_NAME[pref]}: toque para trocar">${ui.icon(THEME_ICON[pref])}<span>Tema ${THEME_NAME[pref]}</span></button>
+      </div>`;
     ui.refreshIcons();
   }
 
-  /** Redesenha só a barra de abas (por exemplo, quando chega uma mensagem). */
+  /** Redesenha só a navegação (por exemplo, quando chega uma mensagem). */
   function syncTabs() {
-    if (ready && current) renderTabs(current.screen.tab);
-  }
-
-  /* Barra de status: clara sobre o cabeçalho azul, sólida quando o conteúdo rola por baixo dela. */
-  function syncStatusBar() {
-    const device = document.getElementById('device'), el = screenEl(), hero = el.querySelector('.hero');
-    const past = !!hero && el.scrollTop > hero.offsetHeight - 38;
-    device.dataset.sb = hero && !past ? 'light' : (current.screen.statusBar === 'light' && !hero ? 'light' : 'dark');
-    device.classList.toggle('sb-solid', past);
-  }
-
-  function syncMode() {
-    document.querySelectorAll('#mode-seg button').forEach((b) => b.classList.toggle('active', b.dataset.arg === state().mode));
+    if (ready && current) renderTabs(current.screen.tab, PARENT[current.name]);
   }
 
   function render(opts) {
@@ -98,9 +101,7 @@
     current = { name: m.name, params: m.params, query: loc.query, screen };
     el.innerHTML = `<div class="view view-${m.name}${opts.keepScroll ? '' : ' enter'}">${screen.render(m.params, loc.query)}</div>`;
     el.scrollTop = opts.keepScroll ? y : 0;
-    syncStatusBar();
-    renderTabs(screen.tab);
-    syncMode();
+    renderTabs(screen.tab, PARENT[m.name]);
     ui.refreshIcons();
     if (screen.mount) cleanup = screen.mount(el.firstElementChild, m.params, loc.query) || null;
   }
@@ -202,7 +203,8 @@
   });
 
   if (!EMBED) window.addEventListener('hashchange', () => render());
-  screenEl().addEventListener('scroll', () => { if (current) syncStatusBar(); }, { passive: true });
+  /* Ao cruzar a largura de tablet, a tela é redesenhada (mapas e listas mudam de formato). */
+  try { window.matchMedia('(min-width: 768px)').addEventListener('change', () => { if (ready) refresh(); }); } catch (e) { /* navegador antigo */ }
 
   /* ---------- Abertura animada ----------
      A abertura já está na página (index.html) e começa a se animar assim que o logo carrega.
@@ -216,7 +218,7 @@
     const el = document.getElementById('abertura');
     if (!el || el.classList.contains('saindo')) return;
     el.classList.add('saindo');
-    document.getElementById('device').classList.remove('com-abertura');
+    document.getElementById('app').classList.remove('com-abertura');
     setTimeout(() => el.remove(), 500);
   }
 
@@ -233,7 +235,7 @@
 
   /** Mostra a abertura de novo (Perfil > Sobre o app). */
   function reverAbertura() {
-    const device = document.getElementById('device'), old = document.getElementById('abertura');
+    const device = document.getElementById('app'), old = document.getElementById('abertura');
     if (old) old.remove();
     if (!aberturaHtml) return;
     const box = document.createElement('div');
@@ -254,11 +256,6 @@
   A['rever-abertura'] = reverAbertura;
 
   /* ---------- Início ---------- */
-  function clock() {
-    const el = document.getElementById('sb-time');
-    if (el) el.textContent = new Date().toLocaleTimeString('pt-BR', { hour: 'numeric', minute: '2-digit' });
-  }
-
   /* Ordem: tema -> banco de trabalhos -> estado salvo -> índice da busca -> primeira tela. */
   async function boot() {
     const ab = document.getElementById('abertura');
@@ -270,9 +267,6 @@
     }
     S.theme.apply();
     S.theme.watch();
-    document.querySelectorAll('[data-bind="commission"]').forEach((el) => { el.textContent = S.pricing.percent(); });
-    clock();
-    setInterval(clock, 20000);
 
     await S.db.open();
     S.store.load();

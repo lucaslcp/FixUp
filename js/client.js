@@ -369,7 +369,7 @@
     };
     const markers = list.map((x) => { const m = S.map.price(searchLayer, x.pro, x.price); m.on('click', () => select(x, m)); return m; });
     if (!list.length) { float.innerHTML = '<div class="map-empty">Nenhum profissional encontrado nesta busca.</div>'; return; }
-    S.map.fit(searchMap, [st().location].concat(list.map((x) => x.pro.pos)), { t: 28, l: 34, r: 34, b: 190 });
+    S.map.fit(searchMap, [st().location].concat(list.map((x) => x.pro.pos)), ui.wide() ? { t: 48, l: 440, r: 48, b: 48 } : { t: 28, l: 34, r: 34, b: 190 });
     select(list[0], markers[0]);
   }
 
@@ -728,7 +728,8 @@
       const map = S.map.create(root.querySelector('#track-map'), o.address, 14);
       let proMarker = null, lineAll = null, lineLeft = null, last = null;
 
-      const fit = (pts) => { if (map) S.map.fit(map, pts, { t: 96, l: 48, r: 48, b: panel.offsetHeight + 36 }); };
+      /* No celular o painel fica embaixo do mapa; em telas largas, à esquerda. */
+      const fit = (pts) => { if (map) S.map.fit(map, pts, ui.wide() ? { t: 90, l: panel.offsetWidth + 72, r: 64, b: 64 } : { t: 96, l: 48, r: 48, b: panel.offsetHeight + 36 }); };
 
       if (map) {
         const rt0 = S.sim.live(o.id);
@@ -832,29 +833,37 @@
      Pedidos e comprovante
      ===================================================================== */
 
-  function orderCard(o) {
+  function orderCard(o, activeId) {
     const pro = S.data.pro(o.proId), final = S.orders.isFinal(o);
     return `
-      <button class="order-card" data-go="${final ? '/order/' : '/track/'}${o.id}">
+      <button class="order-card${o.id === activeId ? ' active' : ''}" data-go="${final ? '/order/' : '/track/'}${o.id}">
         ${avatar(pro, 46)}
         <span class="row-main"><strong>${esc(o.serviceName)}</strong><small>${esc(pro.name)} · ${ui.day(o.createdAt)}, ${ui.time(o.createdAt)}</small></span>
         <span class="order-right"><strong>${money(o.quote.total)}</strong>${statusPill(o)}</span>
       </button>`;
   }
 
+  /* Lista + detalhe: no celular aparece um de cada vez; em telas largas, lado a lado. */
+  const md = (list, detail, open) => `<div class="md${open ? ' has-detail' : ''}"><aside class="md-list">${list}</aside><section class="md-detail">${detail}</section></div>`;
+
+  function ordersList(activeId) {
+    const all = S.orders.all(), live = all.filter((o) => !S.orders.isFinal(o)), past = all.filter(S.orders.isFinal);
+    const card = (o) => orderCard(o, activeId);
+    return `
+      <header class="topbar plain"><h1>Pedidos</h1></header>
+      ${live.length ? `<section class="section first"><h3 class="h3">Em andamento</h3><div class="list">${live.map(card).join('')}</div></section>` : ''}
+      <section class="section${live.length ? '' : ' first'}">
+        <h3 class="h3">Anteriores</h3>
+        ${past.length ? `<div class="list">${past.map(card).join('')}</div>` : `<div class="empty small"><span class="empty-ic">${icon('receipt-text')}</span><p class="muted">Seus pedidos concluídos aparecem aqui.</p></div>`}
+      </section>
+      <div class="spacer"></div>`;
+  }
+
   screens.orders = {
     tab: 'orders', mode: 'client',
 
     render() {
-      const all = S.orders.all(), live = all.filter((o) => !S.orders.isFinal(o)), past = all.filter(S.orders.isFinal);
-      return `
-        <header class="topbar plain"><h1>Pedidos</h1></header>
-        ${live.length ? `<section class="section first"><h3 class="h3">Em andamento</h3><div class="list">${live.map(orderCard).join('')}</div></section>` : ''}
-        <section class="section${live.length ? '' : ' first'}">
-          <h3 class="h3">Anteriores</h3>
-          ${past.length ? `<div class="list">${past.map(orderCard).join('')}</div>` : `<div class="empty small"><span class="empty-ic">${icon('receipt-text')}</span><p class="muted">Seus pedidos concluídos aparecem aqui.</p></div>`}
-        </section>
-        <div class="spacer"></div>`;
+      return md(ordersList(null), `<div class="md-empty"><span class="empty-ic">${icon('receipt-text')}</span><h3>Escolha um pedido</h3><p>Os detalhes e o comprovante aparecem aqui.</p></div>`, false);
     },
 
     mount() {
@@ -878,7 +887,7 @@
       if (!o) return missing('Pedido não encontrado');
       const pro = S.data.pro(o.proId), q = o.quote, done = o.status === 'completed', cancelled = o.status === 'cancelled';
       const share = Math.round((q.payout / q.total) * 100);
-      return `
+      return md(ordersList(o.id), `
         ${backBar('Pedido ' + o.code)}
         <section class="receipt-head ${done ? 'ok' : cancelled ? 'bad' : 'live'}">
           <span class="receipt-ic">${icon(done ? 'circle-check' : cancelled ? 'circle-x' : 'clock')}</span>
@@ -924,7 +933,7 @@
         <section class="section">
           <button class="btn btn-soft btn-block" data-go="${o.serviceId ? `/p/${pro.id}?s=${o.serviceId}` : `/chat/${pro.id}`}">${icon(o.serviceId ? 'repeat' : 'message-circle')}${o.serviceId ? 'Pedir novamente' : 'Falar com ' + esc(ui.first(pro.name))}</button>
         </section>
-        <div class="spacer"></div>`;
+        <div class="spacer"></div>`, true);
     }
   };
 

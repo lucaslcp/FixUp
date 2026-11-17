@@ -129,6 +129,10 @@
   };
 
   S.actions['set-theme'] = (el) => S.theme.set(el.dataset.arg);
+  S.actions['cycle-theme'] = () => S.theme.set({ auto: 'light', light: 'dark', dark: 'auto' }[S.theme.pref()] || 'auto');
+
+  /** Tela larga (tablet ou computador): mesma medida usada no CSS. */
+  ui.wide = () => !!(window.matchMedia && window.matchMedia('(min-width: 768px)').matches);
 
   /* ---------- Avisos rápidos ---------- */
   ui.toast = function (msg, kind) {

@@ -111,8 +111,19 @@
     return (m.from === 'me' ? 'Você: ' : '') + m.text;
   }
 
-  const chatRow = (path, who, sub, c) => `
-    <button class="chat-row${c.unread ? ' unread' : ''}" data-go="${path}">
+  /* Lista + detalhe: no celular aparece um de cada vez; em telas largas, lado a lado. */
+  const md = (list, detail, open) => `<div class="md${open ? ' has-detail' : ''}"><aside class="md-list">${list}</aside><section class="md-detail">${detail}</section></div>`;
+  const pickOne = (text) => `<div class="md-empty"><span class="empty-ic">${icon('messages-square')}</span><h3>Escolha uma conversa</h3><p>${text}</p></div>`;
+
+  /** Mantém a lista ao lado atualizada enquanto uma conversa está aberta. */
+  function keepList(root, html) {
+    const fn = () => { const el = root.querySelector('.md-list'); if (el) { el.innerHTML = html(); ui.refreshIcons(); } };
+    listeners.add(fn);
+    return () => listeners.delete(fn);
+  }
+
+  const chatRow = (path, who, sub, c, active) => `
+    <button class="chat-row${c.unread ? ' unread' : ''}${active ? ' active' : ''}" data-go="${path}">
       ${avatar(who, 50)}
       <span class="row-main"><strong>${esc(who.name)}</strong><small class="cr-sub">${esc(sub)}</small><small class="cr-last">${esc(preview(c))}</small></span>
       <span class="chat-side"><small>${ui.day(c.updatedAt) === 'Hoje' ? ui.time(c.updatedAt) : ui.day(c.updatedAt)}</small>${c.unread ? `<i class="count">${c.unread}</i>` : ''}</span>
@@ -285,21 +296,25 @@
     };
   }
 
+  function clientList(activeId) {
+    const list = st().chats.filter((c) => S.data.pro(c.proId)).sort((a, b) => b.updatedAt - a.updatedAt);
+    return `
+      <header class="topbar plain"><h1>Conversas</h1></header>
+      <section class="section first">
+        ${list.length ? `<div class="list">${list.map((c) => { const p = S.data.pro(c.proId); return chatRow('/chat/' + p.id, p, S.data.cat(p.cat).name, c, p.id === activeId); }).join('')}</div>` : `
+        <div class="empty small"><span class="empty-ic">${icon('messages-square')}</span><h3>Nenhuma conversa ainda</h3>
+          <p class="muted">Abra o perfil de um profissional e toque em “Conversar” para pedir um orçamento sob medida.</p>
+          <button class="btn btn-soft" data-go="/search?focus=1">Buscar profissionais</button></div>`}
+      </section>
+      <section class="section"><p class="note">${icon('shield-check')}<span>Combine tudo por aqui. Propostas aceitas no chat são pagas pelo app e ficam protegidas até a conclusão do serviço.</span></p></section>
+      <div class="spacer"></div>`;
+  }
+
   screens.chats = {
     tab: 'chats', mode: 'client',
 
     render() {
-      const list = st().chats.filter((c) => S.data.pro(c.proId)).sort((a, b) => b.updatedAt - a.updatedAt);
-      return `
-        <header class="topbar plain"><h1>Conversas</h1></header>
-        <section class="section first">
-          ${list.length ? `<div class="list">${list.map((c) => { const p = S.data.pro(c.proId); return chatRow('/chat/' + p.id, p, S.data.cat(p.cat).name, c); }).join('')}</div>` : `
-          <div class="empty small"><span class="empty-ic">${icon('messages-square')}</span><h3>Nenhuma conversa ainda</h3>
-            <p class="muted">Abra o perfil de um profissional e toque em “Conversar” para pedir um orçamento sob medida.</p>
-            <button class="btn btn-soft" data-go="/search?focus=1">Buscar profissionais</button></div>`}
-        </section>
-        <section class="section"><p class="note">${icon('shield-check')}<span>Combine tudo por aqui. Propostas aceitas no chat são pagas pelo app e ficam protegidas até a conclusão do serviço.</span></p></section>
-        <div class="spacer"></div>`;
+      return md(clientList(null), pickOne('Abra uma conversa para combinar o serviço e receber uma proposta personalizada.'), false);
     },
 
     mount() {
@@ -315,10 +330,10 @@
     render(p, q) {
       const pro = S.data.pro(p.id);
       if (!pro) return S.blocks.missing('Profissional não encontrado');
-      return shell({
+      return md(clientList(pro.id), shell({
         title: pro.name, sub: pro.pitch, draft: q.q || '', placeholder: 'Descreva o serviço, envie dúvidas ou peça orçamento…',
         right: `<button class="pill-btn" data-go="/p/${pro.id}">${icon('user')}Perfil</button>`
-      });
+      }), true);
     },
 
     mount(root, p, q) {
@@ -326,9 +341,10 @@
       if (!pro) return null;
       if (q.q) { const input = root.querySelector('#chat-text'); input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
       const detach = attach(root, cKey(pro.id), () => chatOf(pro.id), (c) => clientParts(pro, c));
+      const unlist = keepList(root, () => clientList(pro.id));
       const onSim = (o, rt, tick) => { if (!tick && o.proId === pro.id) emit(cKey(pro.id)); };
       S.sim.on(onSim);
-      return () => { S.sim.off(onSim); detach(); };
+      return () => { S.sim.off(onSim); unlist(); detach(); };
     }
   };
 
@@ -443,19 +459,23 @@
     };
   }
 
+  function proList(activeId) {
+    const list = pchats().slice().sort((a, b) => b.updatedAt - a.updatedAt);
+    return `
+      <header class="topbar plain"><h1>Conversas</h1></header>
+      <section class="section first">
+        ${list.length ? `<div class="list">${list.map((c) => chatRow('/pro/chat/' + c.id, { name: c.client, hue: c.hue }, c.topic, c, c.id === activeId)).join('')}</div>`
+          : `<div class="empty small"><span class="empty-ic">${icon('messages-square')}</span><p class="muted">Quando um cliente pedir um orçamento, a conversa aparece aqui.</p></div>`}
+      </section>
+      <section class="section"><div class="fee-note">${icon('file-plus-2')}<span>Combine o serviço e envie uma <strong>proposta personalizada</strong>. O cliente paga pelo app e o valor fica garantido para você.</span></div></section>
+      <div class="spacer"></div>`;
+  }
+
   screens.proChats = {
     tab: 'pchats', mode: 'pro',
 
     render() {
-      const list = pchats().slice().sort((a, b) => b.updatedAt - a.updatedAt);
-      return `
-        <header class="topbar plain"><h1>Conversas</h1></header>
-        <section class="section first">
-          ${list.length ? `<div class="list">${list.map((c) => chatRow('/pro/chat/' + c.id, { name: c.client, hue: c.hue }, c.topic, c)).join('')}</div>`
-            : `<div class="empty small"><span class="empty-ic">${icon('messages-square')}</span><p class="muted">Quando um cliente pedir um orçamento, a conversa aparece aqui.</p></div>`}
-        </section>
-        <section class="section"><div class="fee-note">${icon('file-plus-2')}<span>Combine o serviço e envie uma <strong>proposta personalizada</strong>. O cliente paga pelo app e o valor fica garantido para você.</span></div></section>
-        <div class="spacer"></div>`;
+      return md(proList(null), pickOne('Abra uma conversa para responder o cliente e enviar uma proposta.'), false);
     },
 
     mount() {
@@ -471,15 +491,18 @@
     render(p) {
       const c = pchat(p.id);
       if (!c) return S.blocks.missing('Conversa não encontrada');
-      return shell({
+      return md(proList(c.id), shell({
         title: c.client, sub: 'Interesse: ' + c.topic, placeholder: 'Escreva uma mensagem',
         right: `<span class="pill-btn static">${icon('navigation')}${ui.km(c.km)}</span>`
-      });
+      }), true);
     },
 
     mount(root, p) {
       const c = pchat(p.id);
-      return c ? attach(root, pKey(c.id), () => pchat(p.id), proParts) : null;
+      if (!c) return null;
+      const detach = attach(root, pKey(c.id), () => pchat(p.id), proParts);
+      const unlist = keepList(root, () => proList(c.id));
+      return () => { unlist(); detach(); };
     }
   };
 

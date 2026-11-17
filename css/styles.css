@@ -117,7 +117,7 @@
 html, body { height: 100%; margin: 0; }
 body {
   font-family: var(--font); font-size: 15px; line-height: 1.45; color: var(--ink);
-  background: var(--stage); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+  background: var(--bg); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
 }
 button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; text-align: inherit; }
 input, textarea, select { font: inherit; color: inherit; }
@@ -134,51 +134,17 @@ small { font-size: 12.5px; }
 .spacer { height: 28px; flex: none; }
 
 /* =========================================================================
-   Palco e moldura do aparelho
+   Estrutura do app
+   Celular: tela cheia, com a barra de navegação embaixo.
+   Tablet e computador (a partir de 768px): barra lateral, conteúdo em várias colunas e
+   telas de lista + detalhe lado a lado. Essas regras ficam no fim deste arquivo.
    ========================================================================= */
 
-.stage {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center; gap: 72px; padding: 16px 40px;
-  background:
-    radial-gradient(900px 520px at 8% 0%, var(--stage-a) 0%, transparent 60%),
-    radial-gradient(700px 520px at 100% 100%, var(--stage-b) 0%, transparent 55%),
-    var(--stage);
+.app {
+  --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); --gx: 16px;
+  position: relative; height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; isolation: isolate;
+  background: var(--bg);
 }
-
-.showcase { max-width: 470px; }
-.brand { display: flex; align-items: center; gap: 12px; font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); }
-.brand-logo { display: block; flex: none; filter: drop-shadow(0 4px 10px rgba(4, 4, 120, .18)); }
-.showcase h1 { margin-top: 34px; font-size: 42px; line-height: 1.08; font-weight: 800; letter-spacing: -.03em; color: var(--ink); }
-.showcase .lead { margin-top: 16px; font-size: 17px; color: var(--ink-2); }
-.feats { list-style: none; margin-top: 30px; display: grid; gap: 16px; }
-.feats li { display: flex; gap: 14px; align-items: flex-start; }
-.feats strong { display: block; font-size: 15.5px; }
-.feats span { color: var(--ink-2); font-size: 14px; }
-.feats b { color: var(--accent-strong); }
-.feat-ic { width: 42px; height: 42px; border-radius: 13px; background: var(--card); color: var(--accent) !important; display: grid; place-items: center; flex: none; box-shadow: var(--sh-1); }
-.feat-ic svg { width: 20px; height: 20px; }
-.viewas { margin-top: 34px; display: flex; align-items: center; gap: 14px; font-weight: 600; font-size: 14px; color: var(--ink-2); }
-.viewas > span { min-width: 108px; }
-.viewas + .viewas { margin-top: 12px; }
-.fine { margin-top: 22px; font-size: 12.5px; color: var(--ink-3); }
-
-.device {
-  --safe-top: 38px; --safe-bottom: 8px;
-  position: relative; flex: none; width: 400px; height: min(850px, calc(100vh - 32px));
-  display: flex; flex-direction: column; overflow: hidden; isolation: isolate;
-  background: var(--bg); border: 11px solid var(--frame); border-radius: 52px;
-  box-shadow: 0 40px 90px rgba(6, 6, 80, .30), 0 0 0 1.5px var(--frame-ring);
-}
-
-.statusbar {
-  position: absolute; inset: 0 0 auto 0; height: 38px; z-index: 80; pointer-events: none;
-  display: flex; align-items: center; justify-content: space-between; padding: 7px 26px 0 30px;
-  font-size: 13.5px; font-weight: 700; color: var(--ink); transition: color .2s, background .2s;
-}
-.device[data-sb="light"] .statusbar { color: #fff; backdrop-filter: blur(12px); }
-.device.sb-solid .statusbar { background: var(--bar); backdrop-filter: blur(14px); }
-.statusbar .island { position: absolute; left: 50%; top: 9px; transform: translateX(-50%); width: 92px; height: 24px; border-radius: 14px; background: #04040E; }
-.sb-icons { display: flex; align-items: center; gap: 6px; }
 
 .screen { position: relative; flex: 1; min-height: 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; }
 .screen::-webkit-scrollbar { display: none; }
@@ -186,18 +152,18 @@ small { font-size: 12.5px; }
 .view.enter { animation: viewIn .26s cubic-bezier(.2, .7, .2, 1); }
 .splash { height: 100%; display: grid; place-items: center; }
 
-@media (max-width: 1180px) {
-  .stage { gap: 44px; padding: 16px 32px; }
-  .showcase { max-width: 400px; }
-  .showcase h1 { font-size: 35px; margin-top: 28px; }
-  .showcase .lead { font-size: 16px; }
-}
-@media (max-width: 940px) { .showcase { display: none; } }
-@media (max-width: 560px) {
-  .stage { padding: 0; min-height: 100dvh; background: var(--bg); }
-  .device { --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px); width: 100vw; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
-  .statusbar { display: none; }
-}
+/* Lista + detalhe (conversas, pedidos). No celular aparece um de cada vez. */
+.view-chats, .view-chat, .view-proChats, .view-proChat, .view-orders, .view-receipt { position: absolute; inset: 0; min-height: 0; }
+.md { position: absolute; inset: 0; display: flex; }
+.md-list { flex: 1; min-width: 0; overflow-y: auto; scrollbar-width: none; }
+.md-list::-webkit-scrollbar { display: none; }
+.md-detail { position: relative; display: none; min-width: 0; overflow-y: auto; scrollbar-width: none; }
+.md-detail::-webkit-scrollbar { display: none; }
+.md.has-detail .md-list { display: none; }
+.md.has-detail .md-detail { display: block; flex: 1; }
+.md-empty { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 32px; text-align: center; color: var(--ink-2); }
+.md-empty h3 { font-size: 17px; color: var(--ink); }
+.md-empty p { max-width: 300px; font-size: 13.5px; }
 
 /* =========================================================================
    Abertura animada (o logo se monta enquanto o app carrega)
@@ -219,7 +185,6 @@ small { font-size: 12.5px; }
 .abertura.pronto .ab-frase { animation: abFrase .5s 1.68s ease-out both; }
 .abertura.saindo { animation: abSai .45s cubic-bezier(.4, 0, .2, 1) forwards; pointer-events: none; }
 .abertura.saindo .ab-centro { animation: abCresce .45s cubic-bezier(.4, 0, .2, 1) forwards; }
-.device.com-abertura .statusbar { color: #fff; background: transparent; backdrop-filter: none; }
 
 @keyframes abMarca { from { opacity: 0; transform: translateY(16px) scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes abFrase { from { opacity: 0; transform: translateY(8px); } to { opacity: .88; transform: none; } }
@@ -231,12 +196,14 @@ small { font-size: 12.5px; }
 }
 
 /* =========================================================================
-   Barra inferior
+   Navegação (barra inferior no celular; barra lateral no tablet e no computador)
    ========================================================================= */
 
 .tabbar { flex: none; display: flex; padding: 8px 6px calc(8px + var(--safe-bottom)); background: var(--card); border-top: 1px solid var(--line); }
 .tabbar[hidden] { display: none; }
-.tab { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 0; border-radius: 12px; font-size: 10.5px; font-weight: 600; color: var(--ink-3); transition: color .15s; }
+.nav-items { flex: 1; display: flex; }
+.nav-brand, .nav-foot { display: none; }
+.tab { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 0; border-radius: 12px; font-size: 10.5px; font-weight: 600; color: var(--ink-3); transition: color .15s, background .15s; }
 .tab .ic { width: 22px; height: 22px; }
 .tab.active { color: var(--accent); }
 .tab.active .ic { stroke-width: 2.4; }
@@ -953,4 +920,109 @@ button.row:hover, .method:hover { background: var(--tint-2); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* =========================================================================
+   Margens laterais (uma variável só, maior em telas largas)
+   ========================================================================= */
+
+.section, .topbar, .results.list, .cta-bar, .profile-head, .receipt-head, .banner-slot:not(:empty) { padding-left: var(--gx); padding-right: var(--gx); }
+.chips:not(.tight):not(.wrap) { margin-left: calc(var(--gx) * -1); margin-right: calc(var(--gx) * -1); padding-left: var(--gx); padding-right: var(--gx); }
+
+/* =========================================================================
+   Tablet e computador (a partir de 768px)
+   ========================================================================= */
+
+@media (min-width: 768px) {
+  .app { --gx: 28px; display: grid; grid-template-columns: 92px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  .screen { grid-column: 2; grid-row: 1; }
+  .screen, .md-list, .md-detail { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+
+  /* Barra lateral */
+  .tabbar, .tabbar[hidden] { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 16px 10px calc(14px + var(--safe-bottom)); border-top: 0; border-right: 1px solid var(--line); overflow-y: auto; scrollbar-width: none; }
+  .nav-brand { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 2px 0 14px; font-size: 22px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); }
+  .nav-brand img { display: block; filter: drop-shadow(0 4px 10px rgba(4, 4, 120, .18)); }
+  .nav-brand span { display: none; }
+  .nav-items { flex: none; flex-direction: column; gap: 4px; }
+  .nav-foot { display: flex; flex-direction: column; gap: 4px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); }
+  .tab { flex: none; padding: 10px 4px; border-radius: 14px; font-size: 11px; line-height: 1.15; text-align: center; }
+  .tab:hover { background: var(--tint-2); color: var(--ink-2); }
+  .tab.active, .tab.active:hover { background: var(--tint); color: var(--accent-strong); }
+  .tab-dot { top: 7px; left: calc(50% + 8px); }
+
+  /* Largura do conteúdo */
+  .view { width: 100%; max-width: 1240px; margin-inline: auto; }
+  .view-profile, .view-wallet, .view-checkout, .view-proEarnings, .view-account, .view-proEdit { max-width: 800px; }
+  .view-proProfile { max-width: 980px; }
+  .view-chats, .view-chat, .view-proChats, .view-proChat, .view-orders, .view-receipt, .view-track { max-width: none; }
+  .topbar { padding-top: calc(var(--safe-top) + 18px); }
+  .topbar.plain h1 { font-size: 30px; }
+  .section { margin-top: 28px; }
+  .section.first { margin-top: 12px; }
+
+  /* Início */
+  .hero { margin: 18px var(--gx) 0; border-radius: 28px; padding: 26px 28px 28px; }
+  .hero-title { font-size: 32px; }
+  .hero .searchbar { max-width: 640px; }
+  .hero-chips { margin: 14px 0 0; padding: 0; flex-wrap: wrap; }
+  .cats { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .sheet .cats { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .map-card { height: 250px; }
+  .map-card.flat { height: 190px; }
+  .map-card.tall { height: 300px; }
+  .view-proHome { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-content: start; align-items: start; }
+  .view-proHome > .hero, .view-proHome > .spacer { grid-column: 1 / -1; }
+  .view-proHome > .section { margin-top: 20px; }
+  .view-proHome > .section.first { padding-right: 0; }
+
+  /* Listas em colunas */
+  .list, .jobs, .reviews, .svc-list { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .sheet .list, .sheet .jobs, .md-list .list, .match-box .jobs, .map-float .list, .match-card .list { grid-template-columns: minmax(0, 1fr); }
+  .results.list { padding-bottom: 32px; }
+  .results.list > .quick, .results.list > .understood, .results.list > .examples { max-width: 720px; }
+
+  /* Lista + detalhe lado a lado */
+  .md-list, .md.has-detail .md-list { display: block; flex: none; width: 348px; border-right: 1px solid var(--line); }
+  .md-detail, .md.has-detail .md-detail { display: block; flex: 1; }
+  .md-detail .topbar > .icon-btn[data-action="back"], .md-detail .chat-head > .icon-btn[data-action="back"] { display: none; }
+  .md-detail .topbar h2 { text-align: left; font-size: 19px; }
+  .md-detail > .chat { max-width: 860px; margin-inline: auto; }
+  .md-list .chat-row.active, .md-list .order-card.active { box-shadow: 0 0 0 2px var(--primary-2), var(--sh-1); }
+  .md-detail > :not(.chat):not(.md-empty) { max-width: 760px; margin-inline: auto; }
+
+  /* Mapa com painel flutuante */
+  .map-float { left: var(--gx); right: auto; bottom: 24px; width: 380px; }
+  .track-top { left: 24px; right: 24px; top: calc(var(--safe-top) + 18px); }
+  .track-panel { left: 24px; right: auto; bottom: 24px; width: 400px; border-radius: 26px; padding-bottom: 18px; }
+  .track-panel > .grip { display: none; }
+
+  /* Painéis viram janelas centralizadas */
+  .sheet { left: 50%; right: auto; top: 50%; bottom: auto; width: min(540px, calc(100% - 48px)); max-height: 86%; border-radius: 26px; padding: 22px 24px 24px; transform: translate(-50%, -50%); animation: modalIn .22s cubic-bezier(.2, .8, .2, 1); }
+  .sheet > .grip { display: none; }
+  .sheet-root.closing .sheet { animation: modalOut .18s ease-in forwards; }
+  .toast-root { top: calc(var(--safe-top) + 20px); }
+  .cta-bar { border-radius: 20px 20px 0 0; }
+}
+
+@media (min-width: 1024px) {
+  .list, .jobs, .reviews { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .view-proProfile .jobs, .view-proProfile .reviews, .view-proProfile .svc-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .md-list, .md.has-detail .md-list { width: 380px; }
+}
+
+@media (min-width: 1280px) {
+  .app { grid-template-columns: 240px minmax(0, 1fr); }
+  .tabbar, .tabbar[hidden] { padding: 18px 14px calc(16px + var(--safe-bottom)); }
+  .nav-brand { justify-content: flex-start; padding: 2px 8px 16px; }
+  .nav-brand span { display: inline; }
+  .tab { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 11px 12px; font-size: 14px; text-align: left; }
+  .tab-dot { position: static; margin-left: auto; border: 0; }
+}
+
+@keyframes modalIn { from { opacity: 0; transform: translate(-50%, -46%) scale(.97); } to { opacity: 1; transform: translate(-50%, -50%); } }
+@keyframes modalOut { to { opacity: 0; transform: translate(-50%, -47%) scale(.98); } }
+
+/* Em 3 colunas estreitas, o cartão dispensa o rótulo do preço para o nome da categoria caber. */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .list .pro-from { display: none; }
 }
