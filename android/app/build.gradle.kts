@@ -11,8 +11,8 @@ android {
     applicationId = "app.fixup.mobile"
     minSdk = 24
     targetSdk = 35
-    versionCode = 20200
-    versionName = "2.2.0"
+    versionCode = 30000
+    versionName = "3.0.0"
     resourceConfigurations += listOf("pt", "pt-rBR")
   }
 
