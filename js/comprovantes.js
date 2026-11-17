@@ -103,10 +103,19 @@
   }
 
   function download(r) {
+    const name = `comprovante-${r.meta.file}-${r.id}.html`;
+    if (window.FixUpAndroid && window.FixUpAndroid.saveReceipt) {
+      if (window.FixUpAndroid.saveReceipt(name, standalone(r))) {
+        ui.toast('Comprovante salvo em Downloads.', 'ok');
+      } else {
+        ui.toast('Não foi possível salvar o comprovante no aparelho.', 'bad');
+      }
+      return;
+    }
     try {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(new Blob([standalone(r)], { type: 'text/html' }));
-      a.download = `comprovante-${r.meta.file}-${r.id}.html`;
+      a.download = name;
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -122,7 +131,10 @@
     document.body.classList.add('printing');
     const done = () => { document.body.classList.remove('printing'); root.innerHTML = ''; window.removeEventListener('afterprint', done); };
     window.addEventListener('afterprint', done);
-    setTimeout(() => window.print(), 60);
+    setTimeout(() => {
+      if (window.FixUpAndroid && window.FixUpAndroid.printPage) window.FixUpAndroid.printPage(`${r.meta.title} ${r.id}`);
+      else window.print();
+    }, 60);
   }
 
   /* ---------- Na tela ---------- */
