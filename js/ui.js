@@ -109,18 +109,29 @@
     calendar: '<path d="M7.6 2.6v4M16.4 2.6v4" fill="none" stroke-width="2.4" stroke-linecap="round"/><rect x="2.8" y="4.6" width="18.4" height="17" rx="2.8"/><path d="M2.8 9.6h18.4" fill="none" stroke-width="1.6" class="cut"/><rect x="5.6" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="10.3" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="15" y="12" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="5.6" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="10.3" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/><rect x="15" y="16.4" width="3.4" height="2.8" rx=".6" class="cut-fill"/>',
     shield: '<path d="M12 2.4 4.2 5.4v6.2c0 5.1 3.4 8.8 7.8 10.2 4.4-1.4 7.8-5.1 7.8-10.2V5.4z"/><path d="M8.4 12.2l2.6 2.6 4.8-5" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" class="cut"/>'
   };
+  const TILE_BOX = 'x="92" y="100" width="228" height="228"', TILE_AT = 'translate(236 244) scale(3.15)';
   const tileGlyph = {};
   Object.keys(TILE_GLYPH).forEach((k) => {
     const g = TILE_GLYPH[k];
-    /* contorno azul-marinho largo por baixo (separa o símbolo do pássaro) e o símbolo branco por cima */
-    const halo = g.replace(/ class="cut(-fill)?"/g, '').replace(/stroke-width="([\d.]+)"/g, (m, w) => `stroke-width="${+w + 5.4}"`);
-    tileGlyph[k] = `<g class="ppt-halo">${halo}</g>` +
-      `<g class="ppt-glyph">${g.replace(/class="cut"/g, 'class="ppt-cut"').replace(/class="cut-fill"/g, 'class="ppt-cut-fill"')}</g>`;
+    tileGlyph[k] = {
+      /* a mesma forma, mais larga: abre um respiro no pássaro em volta do símbolo */
+      gap: g.replace(/ class="cut(-fill)?"/g, '').replace(/stroke-width="([\d.]+)"/g, (m, w) => `stroke-width="${+w + 5.4}"`),
+      art: g.replace(/class="cut"/g, 'class="ppt-cut"').replace(/class="cut-fill"/g, 'class="ppt-cut-fill"')
+    };
   });
-  /** Quadrado com o pica-pau e um símbolo no canto: briefcase, pin, search, user, calendar ou shield. */
-  ui.ppTile = (glyph) => (S.mascotArt
-    ? `<svg class="pp-tile" viewBox="92 100 228 228" aria-hidden="true"><use href="#fx-pp-n" class="ppt-n"/><use href="#fx-pp-w" class="ppt-w"/><g transform="translate(236 244) scale(3.15)">${tileGlyph[glyph] || ''}</g></svg>`
-    : ui.icon(glyph === 'pin' ? 'map-pin' : glyph));
+  let tileSeq = 0;
+  /** Quadrado com o pica-pau e um símbolo no canto: briefcase, pin, search, user, calendar ou shield.
+      O traço é um azul-marinho translúcido, para a cor da barra aparecer através do desenho. */
+  ui.ppTile = (glyph) => {
+    const t = tileGlyph[glyph];
+    if (!S.mascotArt || !t) return ui.icon(glyph === 'pin' ? 'map-pin' : glyph);
+    const id = 'fx-ppt-' + (++tileSeq);
+    return `<svg class="pp-tile" viewBox="92 100 228 228" aria-hidden="true">
+      <mask id="${id}" maskUnits="userSpaceOnUse" ${TILE_BOX}><rect ${TILE_BOX} fill="#fff"/><g transform="${TILE_AT}" fill="#000" stroke="#000" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">${t.gap}</g></mask>
+      <g mask="url(#${id})"><use href="#fx-pp-n" class="ppt-fill"/><g class="ppt-lines"><use href="#fx-pp-n" class="ppt-line"/></g><use href="#fx-pp-w" class="ppt-w"/></g>
+      <g transform="${TILE_AT}" class="ppt-glyph">${t.art}</g>
+    </svg>`;
+  };
 
   /** Selo de conta verificada, com o pica-pau. */
   ui.verified = (size) => `<span class="pp-verified" title="Profissional Verificado FixUp" aria-label="Profissional Verificado FixUp">${ui.mascot('badge', size || 16)}</span>`;

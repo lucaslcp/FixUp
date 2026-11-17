@@ -4,6 +4,16 @@ Todas as mudanças do FixUp, da mais recente para a mais antiga.
 As versões seguem o formato `MAIOR.MENOR.CORREÇÃO`: o primeiro número muda quando o app muda de forma
 grande, o segundo quando ganha recursos novos e o terceiro quando só há correções.
 
+## 3.3.1 — 17 de novembro de 2026
+
+### Mudou
+
+- **Pica-pau mais suave nos blocos azuis** ("Quem já resolveu um caso como o seu", "Chamar o mais
+  próximo", "Você presta serviços?" / "Voltar para o modo cliente", "Agendamentos" e "Seguro e
+  confiável"). O contorno passou de quase preto para azul-marinho translúcido, que deixa a cor da barra
+  aparecer; o rosto e o símbolo ficaram num branco levemente lilás; e a borda escura em volta do
+  símbolo deu lugar a um respiro no desenho. Todos os quadrados agora têm o mesmo fundo claro.
+
 ## 3.3.0 — 17 de novembro de 2026
 
 ### Novo

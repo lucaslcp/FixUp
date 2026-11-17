@@ -815,14 +815,16 @@ button.row:hover, .method:hover { background: var(--tint-2); }
 .mode-card .row-main strong { white-space: normal; font-size: 15.5px; }
 .mode-ic { width: 46px; height: 46px; flex: none; border-radius: 14px; background: rgba(255, 255, 255, .16); display: grid; place-items: center; }
 /* Blocos de destaque com o pica-pau (ui.ppTile): o desenho ocupa o quadrado inteiro. */
-.trust-ic.art, .quick-ic.art, .mode-ic.art, .feature-ic.art, .pp-hero-ic { width: 58px; height: 58px; flex: none; border-radius: 17px; overflow: hidden; display: block; }
+.trust-ic.art, .quick-ic.art, .mode-ic.art, .feature-ic.art, .pp-hero-ic { width: 58px; height: 58px; flex: none; border-radius: 17px; overflow: hidden; display: block; background: rgba(255, 255, 255, .14); }
 .pp-tile { display: block; width: 100%; height: 100%; }
-.pp-tile .ppt-n { fill: rgba(255, 255, 255, .2); stroke: #08083A; stroke-width: 10; stroke-linejoin: round; }
-.pp-tile .ppt-w { fill: #fff; }
-.pp-tile .ppt-halo { fill: #08083A; stroke: #08083A; stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
-.pp-tile .ppt-glyph { fill: #fff; stroke: #fff; }
-.pp-tile .ppt-cut { stroke: #08083A; }
-.pp-tile .ppt-cut-fill { fill: #08083A; stroke: none; }
+/* Cores suaves: o traço azul-marinho é translúcido e o branco é levemente lilás, para combinar com a barra azul. */
+.pp-tile .ppt-fill { fill: rgba(255, 255, 255, .14); }
+.pp-tile .ppt-lines { opacity: .55; }
+.pp-tile .ppt-line { fill: none; stroke: #05054A; stroke-width: 9; stroke-linejoin: round; }
+.pp-tile .ppt-w { fill: #EEF0FF; }
+.pp-tile .ppt-glyph { fill: #F4F5FF; stroke: #F4F5FF; }
+.pp-tile .ppt-cut { stroke: #3B3BD8; }
+.pp-tile .ppt-cut-fill { fill: #3B3BD8; stroke: none; }
 
 /* ---------- Blocos "Agendamentos" e "Seguro e confiável" (início) ---------- */
 .feature-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
@@ -839,7 +841,6 @@ button.row:hover, .method:hover { background: var(--tint-2); }
 
 /* Cabeçalho com o pica-pau sobre fundo azul (tela de Agendamentos e janela de segurança). */
 .pp-hero { display: flex; gap: 14px; align-items: center; padding: 14px 16px; border-radius: var(--r-lg); background: var(--grad-deep); color: #fff; }
-.pp-hero-ic { background: rgba(255, 255, 255, .16); }
 .pp-hero-text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .pp-hero-text strong { font-size: 15px; line-height: 1.25; }
 .pp-hero-text small { font-size: 12.5px; opacity: .84; line-height: 1.4; }
