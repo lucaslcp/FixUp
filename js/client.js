@@ -183,7 +183,7 @@
 
         <section class="section">
           <button class="trust" data-go="/search?focus=1">
-            <span class="trust-ic">${icon('search-check')}</span>
+            <span class="trust-ic art">${ui.ppTile('search')}</span>
             <span class="trust-text"><strong>Quem já resolveu um caso como o seu</strong><span>Descreva o problema com suas palavras. A busca compara com os trabalhos já realizados por cada profissional.</span></span>
           </button>
         </section>
@@ -334,7 +334,7 @@
       const where = sv.cat ? 'em ' + esc(plain(S.data.cat(sv.cat).short)) : 'perto de você';
       return `${sv.cat ? '' : examples}${sortbar}
         <button class="quick" data-action="quick-match">
-          <span class="quick-ic">${icon('zap')}</span>
+          <span class="quick-ic art">${ui.ppTile('pin')}</span>
           <span class="quick-text"><strong>Chamar o mais próximo</strong><small>Encontramos o melhor profissional disponível agora</small></span>
           ${icon('chevron-right')}
         </button>
@@ -1140,7 +1140,7 @@
 
         <section class="section">
           <button class="mode-card" data-action="set-mode" data-arg="${isPro ? 'client' : 'pro'}">
-            <span class="mode-ic">${icon(isPro ? 'user' : 'briefcase')}</span>
+            <span class="mode-ic art">${ui.ppTile(isPro ? 'user' : 'briefcase')}</span>
             <span class="row-main"><strong>${isPro ? 'Voltar para o modo cliente' : 'Você presta serviços?'}</strong><small>${isPro ? 'Contrate profissionais perto de você.' : 'Mude para o modo profissional. Sem mensalidade.'}</small></span>
             ${icon('arrow-right')}
           </button>

@@ -10,7 +10,7 @@
 
   S.config = {
     appName: 'FixUp',
-    version: '3.1.0',
+    version: '3.2.0',
     embedded,
 
     /** Parte da plataforma em cada serviço concluído (0.08 = 8%). Não há mensalidade.
@@ -65,6 +65,12 @@
 
     /** Notas de atualização mostradas em Perfil > Novidades (o histórico completo fica no CHANGELOG.md). */
     releases: [
+      {
+        v: '3.2.0', date: '17 nov 2026', title: 'Pica-pau nos blocos de destaque',
+        notes: [
+          'Os blocos "Quem já resolveu um caso como o seu", "Chamar o mais próximo" e "Você presta serviços?" ganharam o pica-pau com uma lupa, um alfinete de mapa e uma maleta.'
+        ]
+      },
       {
         v: '3.1.0', date: '17 nov 2026', title: 'Pica-pau nas categorias e limpeza de piscina',
         notes: [

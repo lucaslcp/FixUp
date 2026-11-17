@@ -4,6 +4,19 @@ Todas as mudanças do FixUp, da mais recente para a mais antiga.
 As versões seguem o formato `MAIOR.MENOR.CORREÇÃO`: o primeiro número muda quando o app muda de forma
 grande, o segundo quando ganha recursos novos e o terceiro quando só há correções.
 
+## 3.2.0 — 17 de novembro de 2026
+
+### Novo
+
+- **Pica-pau nos blocos de destaque.** Os ícones de linha dos blocos azuis deram lugar à cabeça do
+  pica-pau da marca, em contorno, com um símbolo branco no canto:
+  - "Quem já resolveu um caso como o seu" (tela inicial): lupa;
+  - "Chamar o mais próximo" (busca): alfinete de mapa;
+  - "Você presta serviços?" (perfil): maleta, inteira dentro do quadrado; no modo profissional,
+    "Voltar para o modo cliente" mostra uma pessoa.
+- Os símbolos são desenhados em vetor a partir do mesmo desenho do logo (`ui.ppTile` em `js/ui.js`),
+  então ficam nítidos em qualquer tela e não acrescentam arquivos.
+
 ## 3.1.0 — 17 de novembro de 2026
 
 ### Novo

@@ -814,6 +814,15 @@ button.row:hover, .method:hover { background: var(--tint-2); }
 .mode-card .row-main small { color: rgba(255, 255, 255, .84); }
 .mode-card .row-main strong { white-space: normal; font-size: 15.5px; }
 .mode-ic { width: 46px; height: 46px; flex: none; border-radius: 14px; background: rgba(255, 255, 255, .16); display: grid; place-items: center; }
+/* Blocos de destaque com o pica-pau (ui.ppTile): o desenho ocupa o quadrado inteiro. */
+.trust-ic.art, .quick-ic.art, .mode-ic.art { width: 58px; height: 58px; flex: none; border-radius: 17px; overflow: hidden; display: block; }
+.pp-tile { display: block; width: 100%; height: 100%; }
+.pp-tile .ppt-n { fill: rgba(255, 255, 255, .2); stroke: #08083A; stroke-width: 10; stroke-linejoin: round; }
+.pp-tile .ppt-w { fill: #fff; }
+.pp-tile .ppt-halo { fill: #08083A; stroke: #08083A; stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; }
+.pp-tile .ppt-glyph { fill: #fff; stroke: #fff; }
+.pp-tile .ppt-cut { stroke: #08083A; }
+.pp-tile .ppt-cut-fill { fill: #08083A; stroke: none; }
 .theme-card { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
 .theme-card .seg { flex: 1; background: var(--bg); box-shadow: none; }
 .theme-card .seg button { flex: 1; padding: 0; text-align: center; font-size: 13.5px; }

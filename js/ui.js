@@ -83,10 +83,31 @@
     return box('101 90 228 228', PP_HEAD);   // badge e loader
   };
 
-  /** Selo de conta verificada, com o pica-pau. */
   /** Ilustração do pica-pau da categoria (ou o ícone de linha, se a categoria não tiver ilustração). */
   ui.catArt = (c) => (c.art ? `<img class="cat-art" src="${c.art}" alt="" loading="lazy" decoding="async" draggable="false">` : ui.icon(c.icon));
 
+  /* Símbolos dos blocos de destaque: a cabeça do pica-pau em contorno e um símbolo branco no canto.
+     Os símbolos usam a grade de 24 dos ícones de linha; cut = recorte azul-marinho dentro do símbolo. */
+  const TILE_GLYPH = {
+    briefcase: '<path d="M8.5 7V5.2A2.2 2.2 0 0 1 10.7 3h2.6a2.2 2.2 0 0 1 2.2 2.2V7" fill="none" stroke-width="2.2" stroke-linecap="round"/><rect x="2.5" y="7" width="19" height="14" rx="2.6"/><path d="M2.5 13.2h19" fill="none" stroke-width="1.5" class="cut"/><rect x="6.6" y="11.6" width="2.4" height="3.2" rx=".6" class="cut-fill"/><rect x="15" y="11.6" width="2.4" height="3.2" rx=".6" class="cut-fill"/>',
+    pin: '<path d="M12 22.5s-7.5-6.4-7.5-12.6a7.5 7.5 0 0 1 15 0c0 6.2-7.5 12.6-7.5 12.6z"/><circle cx="12" cy="9.9" r="2.8" class="cut-fill"/>',
+    search: '<circle cx="10.2" cy="10.2" r="6.6" fill="none" stroke-width="3"/><path d="M15.2 15.2 21 21" fill="none" stroke-width="3.4" stroke-linecap="round"/>',
+    user: '<circle cx="12" cy="7.6" r="4.6"/><path d="M3.5 21.5a8.5 8.5 0 0 1 17 0z"/>'
+  };
+  const tileGlyph = {};
+  Object.keys(TILE_GLYPH).forEach((k) => {
+    const g = TILE_GLYPH[k];
+    /* contorno azul-marinho largo por baixo (separa o símbolo do pássaro) e o símbolo branco por cima */
+    const halo = g.replace(/ class="cut(-fill)?"/g, '').replace(/stroke-width="([\d.]+)"/g, (m, w) => `stroke-width="${+w + 5.4}"`);
+    tileGlyph[k] = `<g class="ppt-halo">${halo}</g>` +
+      `<g class="ppt-glyph">${g.replace(/class="cut"/g, 'class="ppt-cut"').replace(/class="cut-fill"/g, 'class="ppt-cut-fill"')}</g>`;
+  });
+  /** Quadrado com o pica-pau e um símbolo no canto: briefcase, pin, search ou user. */
+  ui.ppTile = (glyph) => (S.mascotArt
+    ? `<svg class="pp-tile" viewBox="92 100 228 228" aria-hidden="true"><use href="#fx-pp-n" class="ppt-n"/><use href="#fx-pp-w" class="ppt-w"/><g transform="translate(236 244) scale(3.15)">${tileGlyph[glyph] || ''}</g></svg>`
+    : ui.icon(glyph === 'pin' ? 'map-pin' : glyph));
+
+  /** Selo de conta verificada, com o pica-pau. */
   ui.verified = (size) => `<span class="pp-verified" title="Profissional Verificado FixUp" aria-label="Profissional Verificado FixUp">${ui.mascot('badge', size || 16)}</span>`;
   /** Indicador de carregamento: o pica-pau bicando. */
   ui.loader = (size) => `<span class="pp-loading" role="status" aria-label="Carregando">${ui.mascot('loader', size || 44)}</span>`;
